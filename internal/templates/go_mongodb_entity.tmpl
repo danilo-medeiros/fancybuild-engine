@@ -1,0 +1,9 @@
+// {{.Name}} - {{.Description}}
+type {{capitalize .Name}} struct {
+{{range .Fields}}
+    {{capitalize .Name}} {{.Type}} `json:"{{.Name}}" bson:"{{.Name}}" {{validation .Validations}}`
+{{end}}
+{{if .Timestamps}}
+    Timestamps `json:",inline" bson:",inline"`
+{{end}}
+}
