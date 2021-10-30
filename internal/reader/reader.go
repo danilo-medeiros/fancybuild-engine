@@ -23,6 +23,10 @@ type ValidationError struct {
 	Errors  []*FieldError `json:"errors"`
 }
 
+func (*ValidationError) Error() string {
+	return ErrorMessage
+}
+
 type Reader interface {
 	Read([]byte, *entities.Definitions) error
 	Validate(*entities.Definitions) *ValidationError

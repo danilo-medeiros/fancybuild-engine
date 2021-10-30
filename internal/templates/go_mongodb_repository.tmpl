@@ -1,0 +1,144 @@
+package {{.Entity.Name}}
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/danilo-medeiros/todoapp/internal/entities"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const (
+	DatabaseName   = "todoapp"
+	CollectionName = "projects"
+)
+
+type Repository interface {
+	GetAll(*GetAllParams) ([]*entities.Project, error)
+	GetOne(*GetOneParam) (*entities.Project, error)
+	Create(*entities.Project) (*entities.Project, error)
+	Update(*entities.Project) (*entities.Project, error)
+	Delete(*entities.Project) (bool, error)
+	Count(*GetAllParams) (int64, error)
+}
+
+type repository struct {
+	client *mongo.Client
+}
+
+// GetAll - Gets all the projects given a set of parameters
+func (s *repository) GetAll(params *GetAllParams) ([]*entities.Project, error) {
+	var result []*entities.Project
+
+	skip := params.PageIndex * params.Limit
+
+	cursor, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		Find(context.TODO(), params, &options.FindOptions{Limit: &params.Limit, Skip: &skip})
+
+	if err != nil {
+		return nil, fmt.Errorf("error while fetching projects: %w", err)
+	}
+
+	err = cursor.All(context.TODO(), &result)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while parsing projects: %w", err)
+	}
+
+	if result == nil {
+		return make([]*entities.Project, 0), nil
+	}
+
+	return result, nil
+}
+
+// GetOne - Get one project by parameters
+func (s *repository) GetOne(params *GetOneParam) (*entities.Project, error) {
+	var result []*entities.Project
+
+	cursor, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		Find(context.TODO(), params)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = cursor.All(context.TODO(), &result)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while parsing project: %w", err)
+	}
+
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	return result[0], nil
+}
+
+// Create - Create one project
+func (s *repository) Create(project *entities.Project) (*entities.Project, error) {
+	_, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		InsertOne(context.TODO(), project)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while creating projects: %w", err)
+	}
+
+	return project, nil
+}
+
+// Update - Update one project
+func (s *repository) Update(project *entities.Project) (*entities.Project, error) {
+	_, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		UpdateOne(context.TODO(), bson.M{"id": project.ID}, project)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while updating projects: %w", err)
+	}
+
+	return project, nil
+}
+
+// Delete - Hard delete one project
+func (s *repository) Delete(project *entities.Project) (bool, error) {
+	_, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		DeleteOne(context.TODO(), bson.M{"id": project.ID})
+
+	if err != nil {
+		return false, fmt.Errorf("error while deleting projects: %w", err)
+	}
+
+	return true, nil
+}
+
+// Count - Counts all the projects that match the parameters
+func (s *repository) Count(params *GetAllParams) (int64, error) {
+	params.Pagination.Count = 0
+	count, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		CountDocuments(context.TODO(), params)
+
+	if err != nil {
+		return 0, fmt.Errorf("error while counting projects: %w", err)
+	}
+
+	return count, nil
+}
+
+func NewRepository(c *mongo.Client) Repository {
+	return &repository{c}
+}

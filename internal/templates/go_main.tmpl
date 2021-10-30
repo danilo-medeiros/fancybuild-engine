@@ -1,0 +1,48 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"{{.App.Repository}}/todoapp/internal/database"
+	"{{.App.Repository}}/todoapp/internal/errors"
+	"{{.App.Repository}}/todoapp/internal/router"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	app := fiber.New(fiber.Config{
+		ErrorHandler:          errors.Handler,
+		DisableStartupMessage: true,
+		AppName:               "todoapp",
+	})
+
+	err := godotenv.Load()
+
+	if err != nil {
+		panic(err)
+	}
+
+	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
+	app.Use(logger.New())
+
+	ctx, client := database.Connect()
+
+	log.Default().Println("successfully connected to database")
+
+	defer func() {
+		database.Disconnect(ctx, client)
+	}()
+
+	router.Router(app, client)
+
+	err = app.Listen(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
+
+	if err != nil {
+		panic(err)
+	}
+}

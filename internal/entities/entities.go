@@ -42,18 +42,29 @@ type Stack struct {
 }
 
 type App struct {
-	Name     string   `json:"name"`
-	Stack    Stack    `json:"stack"`
-	Version  string   `json:"version"`
-	Type     string   `json:"type"`
-	Entities []Entity `json:"entities"`
+	Name          string         `json:"name" validate:"min=3,max=50"`
+	Description   string         `json:"description" validate:"max=200"`
+	Version       string         `json:"version"`
+	Repository    string         `json:"repository"`
+	Type          string         `json:"type"`
+	Stack         Stack          `json:"stack" validate:"dive"`
+	Entities      []Entity       `json:"entities" validate:"dive"`
+	Endpoints     []Endpoint     `json:"endpoints" validate:"dive"`
+	Relationships []Relationship `json:"relationships" validate:"dive"`
 }
 
 type Definitions struct {
+	Id      string `json:"id"`
 	Version string `json:"version"`
 	App     App    `json:"app"`
 }
 
+type File struct {
+	FinalPath    string
+	TemplatePath string
+	Result       string
+}
+
 type Strategy interface {
-	BuildFileMap() map[string]string
+	BuildFileMap(*Definitions) (map[string]*File, error)
 }

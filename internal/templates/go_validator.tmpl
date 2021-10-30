@@ -1,0 +1,54 @@
+package validator
+
+import (
+	vld "github.com/go-playground/validator/v10"
+)
+
+const (
+	StatusCode   = 406
+	ErrorMessage = "Validation error"
+)
+
+type ValidationError struct {
+	Code    int      `json:"-"`
+	Message string   `json:"message"`
+	Errors  []*Field `json:"errors"`
+}
+
+type Field struct {
+	Field string `json:"field"`
+	Tag   string `json:"tag"`
+	Value string `json:"value"`
+}
+
+func (v *ValidationError) Error() string {
+	return ErrorMessage
+}
+
+func Validate(entity interface{}) error {
+	errors := make([]*Field, 0)
+
+	validate := vld.New()
+	err := validate.Struct(entity)
+
+	if err != nil {
+		for _, err := range err.(vld.ValidationErrors) {
+			var element Field
+			element.Field = err.StructNamespace()
+			element.Tag = err.Tag()
+			element.Value = err.Param()
+
+			errors = append(errors, &element)
+		}
+
+		if len(errors) > 0 {
+			return &ValidationError{
+				Code:    StatusCode,
+				Message: ErrorMessage,
+				Errors:  errors,
+			}
+		}
+	}
+
+	return nil
+}
