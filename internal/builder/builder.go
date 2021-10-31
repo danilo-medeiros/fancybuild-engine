@@ -3,6 +3,7 @@ package builder
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
 )
@@ -21,13 +22,17 @@ func (*builder) Build(definitions *entities.Definitions, strategy entities.Strat
 	}
 
 	for _, file := range fileMap {
-		err = os.MkdirAll(fmt.Sprintf("tmp/%s", definitions.Id), 0744)
+		pathSlices := strings.Split(file.FinalPath, "/")
+		pathSlices = pathSlices[0 : len(pathSlices)-1]
+		filePath := strings.Join(pathSlices, "/")
+
+		err = os.MkdirAll(fmt.Sprintf("tmp/%s/%s", definitions.Id, filePath), 0744)
 
 		if err != nil {
 			return fmt.Errorf("on creating dir %s: %v", definitions.Id, err)
 		}
 
-		f, err := os.Create(fmt.Sprintf("tmp/%s/%s", definitions.Id, file.FinalPath))
+		f, err := os.Create(fmt.Sprintf("tmp/%s/%s_", definitions.Id, file.FinalPath))
 
 		if err != nil {
 			return fmt.Errorf("on creating file %s: %v", file.FinalPath, err)

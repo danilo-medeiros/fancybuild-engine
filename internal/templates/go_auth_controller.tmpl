@@ -1,0 +1,66 @@
+package auth
+
+import (
+	"fmt"
+	"os"
+
+	"{{.App.Repository}}/internal/user"
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt"
+)
+
+type Controller interface {
+	SignIn(*fiber.Ctx) error
+	SignOut(*fiber.Ctx) error
+}
+
+type controller struct {
+	userService user.Service
+}
+
+func (c *controller) SignIn(ctx *fiber.Ctx) error {
+	var params user.GetOneParams
+	err := ctx.BodyParser(&params)
+
+	if err != nil {
+		return err
+	}
+
+	result, err := c.userService.GetOne(&params)
+
+	if err != nil {
+		return err
+	}
+
+	if result == nil {
+		return fiber.ErrUnauthorized
+	}
+
+	if user.CheckPassword(params.Password, result.Password) {
+		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			"email":  result.Email,
+			"userId": result.ID,
+		})
+
+		secret := []byte(os.Getenv("TOKEN_SECRET"))
+		tokenString, err := token.SignedString(secret)
+
+		if err != nil {
+			return fmt.Errorf("error generating jwt token")
+		}
+
+		return ctx.JSON(map[string]string{
+			"authToken": tokenString,
+		})
+	}
+
+	return fiber.ErrUnauthorized
+}
+
+func (c *controller) SignOut(ctx *fiber.Ctx) error {
+	return fiber.ErrNotImplemented
+}
+
+func NewController(userService user.Service) Controller {
+	return &controller{userService}
+}

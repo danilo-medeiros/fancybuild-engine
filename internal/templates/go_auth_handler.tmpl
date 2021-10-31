@@ -1,0 +1,47 @@
+package auth
+
+import (
+	"fmt"
+	"os"
+	"strings"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/golang-jwt/jwt"
+)
+
+func Handler(ctx *fiber.Ctx) error {
+	var token string
+	parts := strings.Split(string(ctx.Request().Header.Peek("Authorization")), " ")
+
+	if len(parts) > 1 {
+		token = parts[1]
+	}
+
+	if len(token) == 0 {
+		return fiber.ErrUnauthorized
+	}
+
+	parsedToken, err := jwt.Parse(token, func(t *jwt.Token) (interface{}, error) {
+		if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+			return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+		}
+
+		return []byte(os.Getenv("TOKEN_SECRET")), nil
+	})
+
+	if err != nil {
+		return fmt.Errorf("error while parsing token: %s", err)
+	}
+
+	if !parsedToken.Valid {
+		return fiber.ErrUnauthorized
+	}
+
+	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
+		ctx.Locals("userID", claims["userId"])
+	} else {
+		return fmt.Errorf("error while parsing token claims")
+	}
+
+	return ctx.Next()
+}

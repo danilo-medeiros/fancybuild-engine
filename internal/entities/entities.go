@@ -11,24 +11,23 @@ type Field struct {
 	Validations []Validation `json:"validations"`
 }
 
+type Action struct {
+	Type string `json:"type"`
+}
+
 type Entity struct {
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Fields      []Field `json:"fields"`
-	Timestamps  bool    `json:"timestamps"`
+	Name        string   `json:"name"`
+	Description string   `json:"description"`
+	Fields      []Field  `json:"fields"`
+	Timestamps  bool     `json:"timestamps"`
+	Actions     []Action `json:"actions"`
 }
 
 type Relationship struct {
-	Item1    string `json:"item1"`
-	Item2    string `json:"item2"`
-	Type     string `json:"type"`
-	Embedded bool   `json:"embedded"`
-}
-
-type Endpoint struct {
-	Method string `json:"method"`
-	URI    string `json:"uri"`
-	Action string `json:"action"`
+	Item1  string `json:"item1"`
+	Item2  string `json:"item2"`
+	Type   string `json:"type"`
+	Nested bool   `json:"nested"`
 }
 
 type Authentication struct {
@@ -49,7 +48,6 @@ type App struct {
 	Type          string         `json:"type"`
 	Stack         Stack          `json:"stack" validate:"dive"`
 	Entities      []Entity       `json:"entities" validate:"dive"`
-	Endpoints     []Endpoint     `json:"endpoints" validate:"dive"`
 	Relationships []Relationship `json:"relationships" validate:"dive"`
 }
 

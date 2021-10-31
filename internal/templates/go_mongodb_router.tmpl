@@ -1,56 +1,38 @@
 package router
 
 import (
-	"{{.Repository.Domain}}/{{.Repository.Username}}/{{.Repository.Name}}/internal/auth"
-	"{{.Repository.Domain}}/{{.Repository.Username}}/{{.Repository.Name}}/internal/healthcheck"
-{{range .Entities}}
-    "{{.Repository.Domain}}/{{.Repository.Username}}/{{.Repository.Name}}/internal/{{lower .Name}}"
-{{end}}
-	"github.com/gofiber/fiber/v2"
+	"{{.App.Repository}}/internal/auth"
+	"{{.App.Repository}}/internal/healthcheck"
+{{range .App.Entities
+}}    "{{$.App.Repository}}/internal/{{.Name}}"
+{{end
+}}    "github.com/gofiber/fiber/v2"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func V1(app *fiber.App, client *mongo.Client) {
+func Router(app *fiber.App, client *mongo.Client) {
 	hc := healthcheck.NewController()
-
-	p := project.NewController(
-		project.NewService(
-			project.NewRepository(
+{{range .App.Entities}}{{
+    $controller := camelize .Name "controller"
+}}    {{$controller}} := {{.Name}}.NewController(
+		{{.Name}}.NewService(
+			{{.Name}}.NewRepository(
 				client,
 			),
 		),
 	)
-
-	userService := user.NewService(
-		user.NewRepository(client),
-	)
-
-	u := user.NewController(
-		userService,
-	)
-
-	s := auth.NewController(
-		userService,
-	)
-
+{{end}}
 	v1 := app.Group("/v1")
 	v1.Get("/", hc.Get)
-
-	projectGrp := v1.Group("/projects")
-	projectGrp.Use(auth.Handler)
-	projectGrp.Get("/", p.GetAll)
-	projectGrp.Get("/:id", p.GetOne)
-	projectGrp.Post("/", p.Create)
-	projectGrp.Put("/:id", p.Update)
-	projectGrp.Delete("/:id", p.Delete)
-
-	userGrp := v1.Group("/users")
-	userGrp.Use(auth.Handler)
-	userGrp.Get("/me", u.GetOne)
-	userGrp.Post("/", u.Create)
-	userGrp.Put("/", u.Update)
-	userGrp.Put("/password", u.UpdatePassword)
-
-	authGrp := v1.Group("/auth")
-	authGrp.Post("/signin", s.SignIn)
+{{range .App.Entities}}{{if hasController .Name}}{{
+      $group := camelize .Name "grp"}}{{
+      $controller := camelize .Name "controller"}}
+    {{$group}} := v1.Group("/{{pluralize .Name}}")
+{{range .Actions}}{{if eq .Type "create"}}
+    {{$group}}.Post("/", {{$controller}}.Create){{end}}{{if eq .Type "getOne"}}
+    {{$group}}.Get("/:id", {{$controller}}.GetOne){{end}}{{if eq .Type "getAll"}}
+    {{$group}}.Get("/", {{$controller}}.GetAll){{end}}{{if eq .Type "update"}}
+    {{$group}}.Put("/:id", {{$controller}}.Update)
+    {{$group}}.Patch("/:id", {{$controller}}.Update){{end}}{{if eq .Type "delete"}}
+    {{$group}}.Get("/:id", {{$controller}}.Delete){{end}}{{end}}{{end}}{{end}}
 }

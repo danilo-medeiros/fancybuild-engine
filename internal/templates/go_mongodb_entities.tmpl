@@ -1,0 +1,27 @@
+package entities
+
+import "time"
+
+// Pagination - A entity to hold simple pagination parameters
+type Pagination struct {
+	SortBy    string `query:"sortBy" json:"sortBy,omitempty"`
+	Order     string `query:"order" json:"order,omitempty"`
+	PageIndex int64  `query:"pageIndex" json:"pageIndex,omitempty"`
+	Limit     int64  `query:"limit" json:"limit,omitempty"`
+	Count     int64  `query:"-" json:"count,omitempty"`
+}
+
+type PaginatedResult struct {
+	Data       interface{} `json:"data"`
+	Pagination `json:",inline"`
+}
+
+type SingleResult struct {
+	Data    interface{} `json:"data,omitempty"`
+	Message string      `json:"message,omitempty"`
+}
+
+type Timestamps struct {
+	CreatedAt time.Time `json:"createdAt" bson:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt" bson:"updatedAt"`
+}

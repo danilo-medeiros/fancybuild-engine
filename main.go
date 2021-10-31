@@ -1,10 +1,8 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
-	"time"
 
 	"github.com/danilo-medeiros/fancybuild/engine/internal/builder"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
@@ -32,7 +30,7 @@ func main() {
 		log.Fatalf("error on parsing definition: %s", err)
 	}
 
-	definition.Id = fmt.Sprintf("%v", time.Now().Unix())
+	definition.Id = "example"
 
 	log.Println("definition parsed successfully")
 
