@@ -80,6 +80,14 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 				Data:         data,
 			}
 		}
+
+		if hasRepository(entity.Name, s.Definitions) {
+			fileMap[fmt.Sprintf("%s_repository", entity.Name)] = &entities.File{
+				FinalPath:    fmt.Sprintf("internal/%s/repository.go", entity.Name),
+				TemplatePath: "go_mongodb_repository.tmpl",
+				Data:         data,
+			}
+		}
 	}
 
 	/* entityMap := map[string]*entities.File{
@@ -202,6 +210,15 @@ func hasController(entity string, definitions *entities.Definitions) bool {
 }
 
 func hasService(entity string, definitions *entities.Definitions) bool {
+	for _, r := range definitions.App.Relationships {
+		if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
+			return false
+		}
+	}
+	return true
+}
+
+func hasRepository(entity string, definitions *entities.Definitions) bool {
 	for _, r := range definitions.App.Relationships {
 		if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
 			return false

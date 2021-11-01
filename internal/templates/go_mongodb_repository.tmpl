@@ -1,0 +1,165 @@
+package {{.Entity.Name}}
+
+import (
+	"context"
+	"fmt"
+
+	"{{.Definitions.App.Repository}}/internal/entities"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+)
+
+const (
+	DatabaseName   = "{{.Definitions.App.Name}}"
+	CollectionName = "{{pluralize .Entity.Name}}"
+)
+
+type Repository interface {
+{{range .Entity.Actions}}
+{{if eq .Type "create"}}
+	Create(*entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error)
+{{end}}
+{{if eq .Type "getOne"}}
+	GetOne(*GetOneParam) (*entities.{{camelize $.Entity.Name}}, error)
+{{end}}
+{{if eq .Type "getAll"}}
+	GetAll(*GetAllParams) ([]*entities.{{camelize $.Entity.Name}}, error)
+
+	Count(*GetAllParams) (int64, error)
+{{end}}
+{{if eq .Type "update"}}
+	Update(*entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error)
+{{end}}
+{{if eq .Type "delete"}}
+	Delete(*entities.{{camelize $.Entity.Name}}) (bool, error)
+{{end}}
+{{end}}
+}
+
+type repository struct {
+	client *mongo.Client
+}
+
+{{range .Entity.Actions}}
+{{if eq .Type "create"}}
+// Create - Create one {{$.Entity.Name}}
+func (s *repository) Create({{$.Entity.Name}} *entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error) {
+	_, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		InsertOne(context.TODO(), {{$.Entity.Name}})
+
+	if err != nil {
+		return nil, fmt.Errorf("error while creating {{pluralize $.Entity.Name}}: %w", err)
+	}
+
+	return {{$.Entity.Name}}, nil
+}
+{{end}}
+{{if eq .Type "getOne"}}
+// GetOne - Get one project by parameters
+func (s *repository) GetOne(params *GetOneParam) (*entities.{{camelize $.Entity.Name}}, error) {
+	var result []*entities.{{camelize $.Entity.Name}}
+
+	cursor, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		Find(context.TODO(), params)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = cursor.All(context.TODO(), &result)
+
+	if err != nil {
+		return nil, fmt.Errorf("while parsing {{$.Entity.Name}}: %w", err)
+	}
+
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	return result[0], nil
+}
+{{end}}
+{{if eq .Type "getAll"}}
+// GetAll - Gets all the {{pluralize $.Entity.Name}} given a set of parameters
+func (s *repository) GetAll(params *GetAllParams) ([]*entities.Project, error) {
+	var result []*entities.{{camelize $.Entity.Name}}
+
+	skip := params.PageIndex * params.Limit
+
+	cursor, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		Find(context.TODO(), params, &options.FindOptions{Limit: &params.Limit, Skip: &skip})
+
+	if err != nil {
+		return nil, fmt.Errorf("error while fetching {{pluralize $.Entity.Name}}: %w", err)
+	}
+
+	err = cursor.All(context.TODO(), &result)
+
+	if err != nil {
+		return nil, fmt.Errorf("error while parsing {{pluralize $.Entity.Name}}: %w", err)
+	}
+
+	if result == nil {
+		return make([]*entities.{{camelize $.Entity.Name}}, 0), nil
+	}
+
+	return result, nil
+}
+
+// Count - Counts all the {{pluralize $.Entity.Name}} that match the parameters
+func (s *repository) Count(params *GetAllParams) (int64, error) {
+	params.Pagination.Count = 0
+	count, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		CountDocuments(context.TODO(), params)
+
+	if err != nil {
+		return 0, fmt.Errorf("error while counting {{pluralize $.Entity.Name}}: %w", err)
+	}
+
+	return count, nil
+}
+{{end}}
+{{if eq .Type "update"}}
+// Update - Update one {{$.Entity.Name}}
+func (s *repository) Update({{$.Entity.Name}} *entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error) {
+	_, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		UpdateOne(context.TODO(), bson.M{"id": {{$.Entity.Name}}.ID}, {{$.Entity.Name}})
+
+	if err != nil {
+		return nil, fmt.Errorf("error while updating {{pluralize $.Entity.Name}}: %w", err)
+	}
+
+	return {{$.Entity.Name}}, nil
+}
+{{end}}
+{{if eq .Type "delete"}}
+// Delete - Deletes one {{$.Entity.Name}}
+func (s *repository) Delete({{$.Entity.Name}} *entities.{{camelize $.Entity.Name}}) (bool, error) {
+	_, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		DeleteOne(context.TODO(), bson.M{"id": {{$.Entity.Name}}.ID})
+
+	if err != nil {
+		return false, fmt.Errorf("error while deleting {{pluralize $.Entity.Name}}: %w", err)
+	}
+
+	return true, nil
+}
+{{end}}
+{{end}}
+
+func NewRepository(c *mongo.Client) Repository {
+	return &repository{c}
+}
