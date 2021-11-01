@@ -221,15 +221,15 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 }
 
 func hasController(entity string, definitions *entities.Definitions) bool {
-	return isANestedEntity(entity, definitions)
+	return !isANestedEntity(entity, definitions)
 }
 
 func hasService(entity string, definitions *entities.Definitions) bool {
-	return isANestedEntity(entity, definitions)
+	return !isANestedEntity(entity, definitions)
 }
 
 func hasRepository(entity string, definitions *entities.Definitions) bool {
-	return isANestedEntity(entity, definitions)
+	return !isANestedEntity(entity, definitions)
 }
 
 func belongsToAuthenticatedEntity(entity string, definitions *entities.Definitions) bool {
@@ -268,7 +268,7 @@ func getNestedEntities(entity string, definitions *entities.Definitions) []entit
 
 func isANestedEntity(entity string, definitions *entities.Definitions) bool {
 	for _, r := range definitions.App.Relationships {
-		if r.Item2 == entity && r.Type == "privateHasMany" {
+		if r.Item2 == entity && r.Type == "hasMany" {
 			return true
 		}
 	}
