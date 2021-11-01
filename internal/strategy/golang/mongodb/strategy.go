@@ -92,6 +92,12 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 				Data:         data,
 			}
 		}
+
+		fileMap[fmt.Sprintf("%s_entity", entity.Name)] = &entities.File{
+			FinalPath:    fmt.Sprintf("internal/entities/%s.go", entity.Name),
+			TemplatePath: "go_mongodb_entity.tmpl",
+			Data:         data,
+		}
 	}
 
 	err := s.renderFileMap(fileMap)
@@ -180,6 +186,10 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 			}
 			return false
 		},
+		"buildValidations": buildValidations,
+		"getNestedEntities": func(entity string) []entities.Entity {
+			return getNestedEntities(entity, s.Definitions)
+		},
 	}
 
 	for key, file := range fileMap {
@@ -211,33 +221,52 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 }
 
 func hasController(entity string, definitions *entities.Definitions) bool {
-	for _, r := range definitions.App.Relationships {
-		if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
-			return false
-		}
-	}
-	return true
+	return isANestedEntity(entity, definitions)
 }
 
 func hasService(entity string, definitions *entities.Definitions) bool {
-	for _, r := range definitions.App.Relationships {
-		if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
-			return false
-		}
-	}
-	return true
+	return isANestedEntity(entity, definitions)
 }
 
 func hasRepository(entity string, definitions *entities.Definitions) bool {
-	for _, r := range definitions.App.Relationships {
-		if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
-			return false
-		}
-	}
-	return true
+	return isANestedEntity(entity, definitions)
 }
 
 func belongsToAuthenticatedEntity(entity string, definitions *entities.Definitions) bool {
+	for _, r := range definitions.App.Relationships {
+		if r.Item2 == entity && r.Type == "privateHasMany" {
+			return true
+		}
+	}
+	return false
+}
+
+func buildValidations(field entities.Field) string {
+	validations := make([]string, 0)
+
+	for _, validation := range field.Validations {
+		switch validation.Name {
+		case "required":
+			validations = append(validations, "required")
+		default:
+			validations = append(validations, fmt.Sprintf("%s=%s", validation.Name, validation.Value))
+		}
+	}
+
+	return strings.Join(validations, ",")
+}
+
+func getNestedEntities(entity string, definitions *entities.Definitions) []entities.Entity {
+	result := make([]entities.Entity, 0)
+	for _, ent := range definitions.App.Entities {
+		if isANestedEntity(ent.Name, definitions) && entity == ent.Name {
+			result = append(result, ent)
+		}
+	}
+	return result
+}
+
+func isANestedEntity(entity string, definitions *entities.Definitions) bool {
 	for _, r := range definitions.App.Relationships {
 		if r.Item2 == entity && r.Type == "privateHasMany" {
 			return true
