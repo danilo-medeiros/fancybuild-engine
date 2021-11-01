@@ -1,13 +1,19 @@
 package main
 
 import (
+	"fmt"
 	"log"
 	"os"
+	"time"
 
 	"github.com/danilo-medeiros/fancybuild/engine/internal/builder"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/reader"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/strategy"
+)
+
+const (
+	OutputFolder = "/home/danilo/development/personal/generated-projects"
 )
 
 func main() {
@@ -30,7 +36,7 @@ func main() {
 		log.Fatalf("error on parsing definition: %s", err)
 	}
 
-	definition.Id = "example"
+	definition.Id = fmt.Sprintf("%v", time.Now().Unix())
 
 	log.Println("definition parsed successfully")
 
@@ -53,7 +59,7 @@ func main() {
 		log.Fatalf("error: strategy not found for %v", definition)
 	}
 
-	b := builder.NewBuilder()
+	b := builder.NewBuilder(OutputFolder)
 
 	err = b.Build(&definition, stgy)
 

@@ -67,5 +67,5 @@ type File struct {
 
 type Strategy interface {
 	BuildFileMap() (map[string]*File, error)
-	BuildPostActions() error
+	BuildPostActions(string) error
 }

@@ -50,6 +50,10 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			FinalPath:    "internal/auth/handler.go",
 			TemplatePath: "go_auth_handler.tmpl",
 		},
+		"error_handler": {
+			FinalPath:    "internal/errors/handler.go",
+			TemplatePath: "go_error_handler.tmpl",
+		},
 	}
 
 	for _, file := range fileMap {
@@ -90,16 +94,6 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		}
 	}
 
-	/* entityMap := map[string]*entities.File{
-		"controller": {FinalPath: "./internal/{{lower .Name}}/controller.go", TemplatePath: "go_controller.tmpl"},
-		"repository": {FinalPath: "./internal/{{lower .Name}}/repository.go", TemplatePath: "go_mongodb_repository.tmpl"},
-		"service":    {FinalPath: "./internal/{{lower .Name}}/service.go", TemplatePath: "go_mongodb_service.tmpl"},
-	}
-
-	endpointMap := map[string]*entities.File{
-		"controller": {FinalPath: "./internal/{{lower .Name}}/controller.go", TemplatePath: "go_controller.tmpl"},
-	} */
-
 	err := s.renderFileMap(fileMap)
 
 	if err != nil {
@@ -111,17 +105,33 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 	return fileMap, nil
 }
 
-func (s *strategy) BuildPostActions() error {
+func (s *strategy) BuildPostActions(projectPath string) error {
+	commands := make([]*exec.Cmd, 0)
+
 	for _, file := range s.FileMap {
-		cmd := exec.Command("go", "fmt", fmt.Sprintf("tmp/%s/%s", s.Definitions.Id, file.FinalPath))
+		cmd := exec.Command("go", "fmt", fmt.Sprintf("%s/%s", projectPath, file.FinalPath))
+		commands = append(commands, cmd)
+	}
+
+	modCommand := exec.Command("go", "mod", "init", s.App.Repository)
+	modCommand.Dir = projectPath
+
+	tidyCommand := exec.Command("go", "mod", "tidy")
+	tidyCommand.Dir = projectPath
+
+	commands = append(commands, modCommand)
+	commands = append(commands, tidyCommand)
+
+	for _, command := range commands {
 		var errb bytes.Buffer
-		cmd.Stderr = &errb
-		err := cmd.Run()
+		command.Stderr = &errb
+		err := command.Run()
 
 		if err != nil {
 			return fmt.Errorf("on running command: %v: %s", err, errb.String())
 		}
 	}
+
 	return nil
 }
 

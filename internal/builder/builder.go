@@ -12,27 +12,31 @@ type Builder interface {
 	Build(*entities.Definitions, entities.Strategy) error
 }
 
-type builder struct{}
+type builder struct {
+	OutputFolder string
+}
 
-func (*builder) Build(definitions *entities.Definitions, strategy entities.Strategy) error {
+func (b *builder) Build(definitions *entities.Definitions, strategy entities.Strategy) error {
 	fileMap, err := strategy.BuildFileMap()
 
 	if err != nil {
 		return err
 	}
 
+	projectPath := fmt.Sprintf("%s/%s/%s", b.OutputFolder, definitions.Id, definitions.App.Name)
+
 	for _, file := range fileMap {
 		pathSlices := strings.Split(file.FinalPath, "/")
 		pathSlices = pathSlices[0 : len(pathSlices)-1]
 		filePath := strings.Join(pathSlices, "/")
 
-		err = os.MkdirAll(fmt.Sprintf("tmp/%s/%s", definitions.Id, filePath), 0744)
+		err = os.MkdirAll(fmt.Sprintf("%s/%s", projectPath, filePath), 0744)
 
 		if err != nil {
-			return fmt.Errorf("on creating dir %s: %v", definitions.Id, err)
+			return fmt.Errorf("on creating dir: %v", err)
 		}
 
-		f, err := os.Create(fmt.Sprintf("tmp/%s/%s", definitions.Id, file.FinalPath))
+		f, err := os.Create(fmt.Sprintf("%s/%s", projectPath, file.FinalPath))
 
 		if err != nil {
 			return fmt.Errorf("on creating file %s: %v", file.FinalPath, err)
@@ -47,15 +51,15 @@ func (*builder) Build(definitions *entities.Definitions, strategy entities.Strat
 		}
 	}
 
-	err = strategy.BuildPostActions()
+	err = strategy.BuildPostActions(projectPath)
 
 	if err != nil {
-		return fmt.Errorf("on post build actions: %s", err)
+		return fmt.Errorf("on build post actions: %s", err)
 	}
 
 	return nil
 }
 
-func NewBuilder() Builder {
-	return &builder{}
+func NewBuilder(outputFolder string) Builder {
+	return &builder{outputFolder}
 }
