@@ -42,18 +42,21 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			FinalPath:    "internal/database/database.go",
 			TemplatePath: "go_mongodb_database.tmpl",
 		},
-		"auth_controller": {
-			FinalPath:    "internal/auth/controller.go",
-			TemplatePath: "go_auth_controller.tmpl",
-		},
-		"auth_handler": {
-			FinalPath:    "internal/auth/handler.go",
-			TemplatePath: "go_auth_handler.tmpl",
-		},
 		"error_handler": {
 			FinalPath:    "internal/errors/handler.go",
 			TemplatePath: "go_error_handler.tmpl",
 		},
+	}
+
+	if len(s.Definitions.App.Authentication.Entity) != 0 {
+		fileMap["auth_controller"] = &entities.File{
+			FinalPath:    "internal/auth/controller.go",
+			TemplatePath: "go_auth_controller.tmpl",
+		}
+		fileMap["auth_handler"] = &entities.File{
+			FinalPath:    "internal/auth/handler.go",
+			TemplatePath: "go_auth_handler.tmpl",
+		}
 	}
 
 	for _, file := range fileMap {

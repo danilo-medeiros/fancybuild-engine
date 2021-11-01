@@ -38,7 +38,7 @@ func Handler(ctx *fiber.Ctx) error {
 	}
 
 	if claims, ok := parsedToken.Claims.(jwt.MapClaims); ok {
-		ctx.Locals("userID", claims["userId"])
+		ctx.Locals("userId", claims["userId"])
 	} else {
 		return fmt.Errorf("error while parsing token claims")
 	}

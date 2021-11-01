@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"{{.App.Repository}}/internal/user"
+	"{{.App.Repository}}/internal/{{.App.Authentication.Entity}}"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 )
@@ -15,18 +15,18 @@ type Controller interface {
 }
 
 type controller struct {
-	userService user.Service
+	{{.App.Authentication.Entity}}Service {{.App.Authentication.Entity}}.Service
 }
 
 func (c *controller) SignIn(ctx *fiber.Ctx) error {
-	var params user.GetOneParams
+	var params {{.App.Authentication.Entity}}.GetOneParams
 	err := ctx.BodyParser(&params)
 
 	if err != nil {
 		return err
 	}
 
-	result, err := c.userService.GetOne(&params)
+	result, err := c.{{.App.Authentication.Entity}}Service.GetOne(&params)
 
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func (c *controller) SignIn(ctx *fiber.Ctx) error {
 		return fiber.ErrUnauthorized
 	}
 
-	if user.CheckPassword(params.Password, result.Password) {
+	if {{.App.Authentication.Entity}}.CheckPassword(params.Password, result.Password) {
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 			"email":  result.Email,
 			"userId": result.ID,
@@ -61,6 +61,6 @@ func (c *controller) SignOut(ctx *fiber.Ctx) error {
 	return fiber.ErrNotImplemented
 }
 
-func NewController(userService user.Service) Controller {
-	return &controller{userService}
+func NewController({{.App.Authentication.Entity}}Service {{.App.Authentication.Entity}}.Service) Controller {
+	return &controller{userService: {{.App.Authentication.Entity}}Service}
 }

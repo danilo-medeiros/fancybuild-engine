@@ -40,7 +40,9 @@ func (c *controller) Create(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
-
+{{if belongsToAuthenticatedEntity $.Entity.Name}}
+	{{$.Entity.Name}}.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)
+{{end}}
 	err = validator.Validate(&{{$.Entity.Name}})
 
 	if err != nil {
@@ -64,7 +66,7 @@ func (c *controller) GetOne(ctx *fiber.Ctx) error {
 	params := GetOneParam{
 		ID: ctx.Params("id"),
 {{if belongsToAuthenticatedEntity $.Entity.Name}}
-        UserID: ctx.Locals("userId").(string),
+		{{capitalize $.Definitions.App.Authentication.Entity}}ID: ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string),
 {{end}}
 	}
 
@@ -94,7 +96,7 @@ func (c *controller) GetAll(ctx *fiber.Ctx) error {
 	}
 
 {{if belongsToAuthenticatedEntity $.Entity.Name}}
-    params.UserID = ctx.Locals("userId").(string)
+	params.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)
 {{end}}
 
 	result, err := c.service.GetAll(&params)
@@ -115,6 +117,10 @@ func (c *controller) Update(ctx *fiber.Ctx) error {
 	if err != nil {
 		return err
 	}
+
+{{if belongsToAuthenticatedEntity $.Entity.Name}}
+	{{$.Entity.Name}}.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)
+{{end}}
 
 	err = validator.Validate(&{{$.Entity.Name}})
 
@@ -138,6 +144,9 @@ func (c *controller) Update(ctx *fiber.Ctx) error {
 func (c *controller) Delete(ctx *fiber.Ctx) error {
 	params := GetOneParam{
 		ID: ctx.Params("id"),
+{{if belongsToAuthenticatedEntity $.Entity.Name}}
+		{{capitalize $.Definitions.App.Authentication.Entity}}ID: ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string),
+{{end}}
 	}
 
 	{{$.Entity.Name}}, err := c.service.GetOne(&params)
