@@ -15,7 +15,7 @@ type Builder interface {
 type builder struct{}
 
 func (*builder) Build(definitions *entities.Definitions, strategy entities.Strategy) error {
-	fileMap, err := strategy.BuildFileMap(definitions)
+	fileMap, err := strategy.BuildFileMap()
 
 	if err != nil {
 		return err
@@ -32,7 +32,7 @@ func (*builder) Build(definitions *entities.Definitions, strategy entities.Strat
 			return fmt.Errorf("on creating dir %s: %v", definitions.Id, err)
 		}
 
-		f, err := os.Create(fmt.Sprintf("tmp/%s/%s_", definitions.Id, file.FinalPath))
+		f, err := os.Create(fmt.Sprintf("tmp/%s/%s", definitions.Id, file.FinalPath))
 
 		if err != nil {
 			return fmt.Errorf("on creating file %s: %v", file.FinalPath, err)
@@ -45,6 +45,12 @@ func (*builder) Build(definitions *entities.Definitions, strategy entities.Strat
 		if err != nil {
 			return fmt.Errorf("on writing file %s: %v", file.FinalPath, err)
 		}
+	}
+
+	err = strategy.BuildPostActions()
+
+	if err != nil {
+		return fmt.Errorf("on post build actions: %s", err)
 	}
 
 	return nil

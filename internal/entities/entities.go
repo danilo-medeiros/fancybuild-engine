@@ -12,7 +12,8 @@ type Field struct {
 }
 
 type Action struct {
-	Type string `json:"type"`
+	Type          string `json:"type"`
+	Authenticated bool   `json:"authenticated"`
 }
 
 type Entity struct {
@@ -31,8 +32,7 @@ type Relationship struct {
 }
 
 type Authentication struct {
-	Type   string `json:"type"`
-	Entity Entity `json:"entity"`
+	Entity string `json:"entity"`
 }
 
 type Stack struct {
@@ -41,14 +41,15 @@ type Stack struct {
 }
 
 type App struct {
-	Name          string         `json:"name" validate:"min=3,max=50"`
-	Description   string         `json:"description" validate:"max=200"`
-	Version       string         `json:"version"`
-	Repository    string         `json:"repository"`
-	Type          string         `json:"type"`
-	Stack         Stack          `json:"stack" validate:"dive"`
-	Entities      []Entity       `json:"entities" validate:"dive"`
-	Relationships []Relationship `json:"relationships" validate:"dive"`
+	Name           string         `json:"name" validate:"min=3,max=50"`
+	Description    string         `json:"description" validate:"max=200"`
+	Version        string         `json:"version"`
+	Repository     string         `json:"repository"`
+	Type           string         `json:"type"`
+	Stack          Stack          `json:"stack" validate:"dive"`
+	Entities       []Entity       `json:"entities" validate:"dive"`
+	Relationships  []Relationship `json:"relationships" validate:"dive"`
+	Authentication Authentication `json:"authentication" validate:"dive"`
 }
 
 type Definitions struct {
@@ -61,8 +62,10 @@ type File struct {
 	FinalPath    string
 	TemplatePath string
 	Result       string
+	Data         interface{}
 }
 
 type Strategy interface {
-	BuildFileMap(*Definitions) (map[string]*File, error)
+	BuildFileMap() (map[string]*File, error)
+	BuildPostActions() error
 }

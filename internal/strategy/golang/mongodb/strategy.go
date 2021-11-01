@@ -1,8 +1,10 @@
 package mongodb
 
 import (
+	"bytes"
 	"fmt"
 	"os"
+	"os/exec"
 	"strings"
 	"text/template"
 
@@ -10,9 +12,11 @@ import (
 )
 
 type strategy struct {
+	*entities.Definitions
+	FileMap map[string]*entities.File
 }
 
-func (s *strategy) BuildFileMap(definitions *entities.Definitions) (map[string]*entities.File, error) {
+func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 	fileMap := map[string]*entities.File{
 		"main": {
 			FinalPath:    "main.go",
@@ -23,29 +27,59 @@ func (s *strategy) BuildFileMap(definitions *entities.Definitions) (map[string]*
 			TemplatePath: "go_validator.tmpl",
 		},
 		"router": {
-			FinalPath:    "./internal/router/router.go",
+			FinalPath:    "internal/router/router.go",
 			TemplatePath: "go_mongodb_router.tmpl",
 		},
 		"entities": {
-			FinalPath:    "./internal/entities.go",
+			FinalPath:    "internal/entities/entities.go",
 			TemplatePath: "go_mongodb_entities.tmpl",
 		},
 		"healthcheck": {
-			FinalPath:    "./internal/healthcheck/controller.go",
+			FinalPath:    "internal/healthcheck/controller.go",
 			TemplatePath: "go_mongodb_healthcheck.tmpl",
 		},
 		"database": {
-			FinalPath:    "./internal/database/database.go",
+			FinalPath:    "internal/database/database.go",
 			TemplatePath: "go_mongodb_database.tmpl",
 		},
 		"auth_controller": {
-			FinalPath:    "./internal/auth/controller.go",
+			FinalPath:    "internal/auth/controller.go",
 			TemplatePath: "go_auth_controller.tmpl",
 		},
 		"auth_handler": {
-			FinalPath:    "./internal/auth/handler.go",
+			FinalPath:    "internal/auth/handler.go",
 			TemplatePath: "go_auth_handler.tmpl",
 		},
+	}
+
+	for _, file := range fileMap {
+		file.Data = s.Definitions
+	}
+
+	for _, entity := range s.Definitions.App.Entities {
+		var data struct {
+			*entities.Definitions
+			entities.Entity
+		}
+
+		data.Definitions = s.Definitions
+		data.Entity = entity
+
+		if hasController(entity.Name, s.Definitions) {
+			fileMap[fmt.Sprintf("%s_controller", entity.Name)] = &entities.File{
+				FinalPath:    fmt.Sprintf("internal/%s/controller.go", entity.Name),
+				TemplatePath: "go_controller.tmpl",
+				Data:         data,
+			}
+		}
+
+		if hasService(entity.Name, s.Definitions) {
+			fileMap[fmt.Sprintf("%s_service", entity.Name)] = &entities.File{
+				FinalPath:    fmt.Sprintf("internal/%s/service.go", entity.Name),
+				TemplatePath: "go_service.tmpl",
+				Data:         data,
+			}
+		}
 	}
 
 	/* entityMap := map[string]*entities.File{
@@ -58,16 +92,32 @@ func (s *strategy) BuildFileMap(definitions *entities.Definitions) (map[string]*
 		"controller": {FinalPath: "./internal/{{lower .Name}}/controller.go", TemplatePath: "go_controller.tmpl"},
 	} */
 
-	err := renderFileMap(definitions, fileMap)
+	err := s.renderFileMap(fileMap)
 
 	if err != nil {
 		return nil, fmt.Errorf("error rendering file map: %v", err)
 	}
 
+	s.FileMap = fileMap
+
 	return fileMap, nil
 }
 
-func renderFileMap(definitions *entities.Definitions, fileMap map[string]*entities.File) error {
+func (s *strategy) BuildPostActions() error {
+	for _, file := range s.FileMap {
+		cmd := exec.Command("go", "fmt", fmt.Sprintf("tmp/%s/%s", s.Definitions.Id, file.FinalPath))
+		var errb bytes.Buffer
+		cmd.Stderr = &errb
+		err := cmd.Run()
+
+		if err != nil {
+			return fmt.Errorf("on running command: %v: %s", err, errb.String())
+		}
+	}
+	return nil
+}
+
+func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 	funcMap := template.FuncMap{
 		"capitalize": func(text string) string {
 			splitted := strings.Split(text, "")
@@ -95,12 +145,22 @@ func renderFileMap(definitions *entities.Definitions, fileMap map[string]*entiti
 		},
 		"replaceAll": strings.ReplaceAll,
 		"hasController": func(entity string) bool {
-			for _, r := range definitions.App.Relationships {
-				if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
-					return false
+			return hasController(entity, s.Definitions)
+		},
+		"belongsToAuthenticatedEntity": func(entity string) bool {
+			return belongsToAuthenticatedEntity(entity, s.Definitions)
+		},
+		"entityHasAction": func(entity string, action string) bool {
+			for _, ent := range s.Definitions.App.Entities {
+				if ent.Name == entity {
+					for _, act := range ent.Actions {
+						if act.Type == action {
+							return true
+						}
+					}
 				}
 			}
-			return true
+			return false
 		},
 	}
 
@@ -116,13 +176,13 @@ func renderFileMap(definitions *entities.Definitions, fileMap map[string]*entiti
 		parsedTemplate, err := template.New(key).Funcs(funcMap).Parse(string(templateContent))
 
 		if err != nil {
-			return fmt.Errorf("error parsing template file %s: %v", key, err)
+			return fmt.Errorf("parsing template file %s: %v", key, err)
 		}
 
-		err = parsedTemplate.Execute(&sb, definitions)
+		err = parsedTemplate.Execute(&sb, file.Data)
 
 		if err != nil {
-			return fmt.Errorf("error rendering template %s: %v", key, err)
+			return fmt.Errorf("rendering template %s: %v", key, err)
 		}
 
 		result := sb.String()
@@ -132,6 +192,33 @@ func renderFileMap(definitions *entities.Definitions, fileMap map[string]*entiti
 	return nil
 }
 
+func hasController(entity string, definitions *entities.Definitions) bool {
+	for _, r := range definitions.App.Relationships {
+		if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
+			return false
+		}
+	}
+	return true
+}
+
+func hasService(entity string, definitions *entities.Definitions) bool {
+	for _, r := range definitions.App.Relationships {
+		if r.Nested && r.Item2 == entity && r.Type == "hasMany" {
+			return false
+		}
+	}
+	return true
+}
+
+func belongsToAuthenticatedEntity(entity string, definitions *entities.Definitions) bool {
+	for _, r := range definitions.App.Relationships {
+		if r.Item2 == entity && r.Type == "privateHasMany" {
+			return true
+		}
+	}
+	return false
+}
+
 func NewStrategy(definitions *entities.Definitions) entities.Strategy {
-	return &strategy{}
+	return &strategy{Definitions: definitions}
 }

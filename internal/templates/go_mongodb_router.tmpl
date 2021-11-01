@@ -34,5 +34,5 @@ func Router(app *fiber.App, client *mongo.Client) {
     {{$group}}.Get("/", {{$controller}}.GetAll){{end}}{{if eq .Type "update"}}
     {{$group}}.Put("/:id", {{$controller}}.Update)
     {{$group}}.Patch("/:id", {{$controller}}.Update){{end}}{{if eq .Type "delete"}}
-    {{$group}}.Get("/:id", {{$controller}}.Delete){{end}}{{end}}{{end}}{{end}}
+    {{$group}}.Delete("/:id", {{$controller}}.Delete){{end}}{{end}}{{end}}{{end}}	
 }

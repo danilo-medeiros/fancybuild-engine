@@ -1,0 +1,135 @@
+package {{$.Entity.Name}}
+
+import (
+	"time"
+
+	"{{.Definitions.App.Repository}}/internal/entities"
+	"github.com/google/uuid"
+)
+
+{{if entityHasAction .Entity.Name "getAll"}}
+type GetAllParams struct {
+	entities.Pagination `query:",inline" bson:"-"`
+{{if belongsToAuthenticatedEntity $.Entity.Name}}
+	UserID string `query:"-" bson:"userId,omitempty"`
+{{end}}
+{{range $.Entity.Fields}}
+	{{capitalize .Name}}                {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty"`
+{{end}}
+}
+{{end}}
+
+{{if or (entityHasAction .Entity.Name "getOne")
+  (entityHasAction .Entity.Name "update")}}
+type GetOneParam struct {
+{{if belongsToAuthenticatedEntity $.Entity.Name}}
+	UserID string `query:"-" bson:"userId,omitempty"`
+{{end}}
+	ID     string `bson:"id,omitempty"`
+}
+{{end}}
+
+type Service interface {
+{{range .Entity.Actions}}
+{{if eq .Type "create"}}
+	Create(*entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error)
+{{end}}
+{{if eq .Type "getOne"}}
+	GetOne(*GetOneParam) (*entities.{{capitalize $.Entity.Name}}, error)
+{{end}}
+{{if eq .Type "getAll"}}
+	GetAll(*GetAllParams) (*entities.PaginatedResult, error)
+{{end}}
+{{if eq .Type "update"}}
+	Update(*entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error)
+{{end}}
+{{if eq .Type "delete"}}
+	Delete(*entities.{{capitalize $.Entity.Name}}) (bool, error)
+{{end}}
+{{end}}
+}
+
+type service struct {
+	repository Repository
+}
+
+{{range .Entity.Actions}}
+{{if eq .Type "create"}}
+// Create - Create one {{$.Entity.Name}}
+func (s *service) Create({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
+	{{$.Entity.Name}}.ID = uuid.New().String()
+{{if $.Entity.Timestamps}}
+	now := time.Now().UTC()
+	{{$.Entity.Name}}.CreatedAt = now
+	{{$.Entity.Name}}.UpdatedAt = now
+{{end}}
+	return s.repository.Create({{$.Entity.Name}})
+}
+{{end}}
+{{if eq .Type "getOne"}}
+// GetOne - Get one {{$.Entity.Name}} by parameters
+func (s *service) GetOne(params *GetOneParam) (*entities.{{capitalize $.Entity.Name}}, error) {
+	return s.repository.GetOne(params)
+}
+{{end}}
+{{if eq .Type "getAll"}}
+// GetAll - Gets all the {{pluralize $.Entity.Name}} given a set of parameters
+func (s *service) GetAll(params *GetAllParams) (*entities.PaginatedResult, error) {
+	result, err := s.repository.GetAll(params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	count, err := s.repository.Count(params)
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &entities.PaginatedResult{
+		Data: result,
+		Pagination: entities.Pagination{
+			SortBy:    params.SortBy,
+			Order:     params.Order,
+			PageIndex: params.PageIndex,
+			Count:     count,
+			Limit:     params.Limit,
+		},
+	}, nil
+}
+{{end}}
+{{if eq .Type "update"}}
+// Update - Update one {{$.Entity.Name}}
+func (s *service) Update({{pluralize $.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
+	{{$.Entity.Name}}, err := s.repository.GetOne(&GetOneParam{
+{{if belongsToAuthenticatedEntity $.Entity.Name}}
+		UserID: {{$.Entity.Name}}.UserID,
+{{end}}
+		ID:     {{$.Entity.Name}}.ID,
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	{{$.Entity.Name}}, err = s.repository.Update({{$.Entity.Name}})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return {{$.Entity.Name}}, nil
+}
+{{end}}
+{{if eq .Type "delete"}}
+// Delete - Hard delete one {{$.Entity.Name}}
+func (s *service) Delete({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (bool, error) {
+	return s.repository.Delete({{$.Entity.Name}})
+}
+{{end}}
+{{end}}
+
+func NewService(r Repository) Service {
+	return &service{r}
+}
