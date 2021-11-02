@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"regexp"
 	"strings"
 	"text/template"
 
@@ -45,6 +46,18 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		"error_handler": {
 			FinalPath:    "internal/errors/handler.go",
 			TemplatePath: "go_error_handler.tmpl",
+		},
+		"gitignore": {
+			FinalPath:    ".gitignore",
+			TemplatePath: "go_gitignore.tmpl",
+		},
+		"env": {
+			FinalPath:    ".env",
+			TemplatePath: "go_mongodb_env.tmpl",
+		},
+		"readme": {
+			FinalPath:    "README.md",
+			TemplatePath: "go_readme.tmpl",
 		},
 	}
 
@@ -116,20 +129,28 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 
 func (s *strategy) BuildPostActions(projectPath string) error {
 	commands := make([]*exec.Cmd, 0)
+	isGoFileRegexp := regexp.MustCompile(".go$")
 
 	for _, file := range s.FileMap {
-		cmd := exec.Command("go", "fmt", fmt.Sprintf("%s/%s", projectPath, file.FinalPath))
-		commands = append(commands, cmd)
+		isGoFile := isGoFileRegexp.MatchString(file.FinalPath)
+
+		if isGoFile {
+			cmd := exec.Command("go", "fmt", fmt.Sprintf("%s/%s", projectPath, file.FinalPath))
+			commands = append(commands, cmd)
+		}
 	}
 
 	modCommand := exec.Command("go", "mod", "init", s.App.Repository)
 	modCommand.Dir = projectPath
+	commands = append(commands, modCommand)
 
 	tidyCommand := exec.Command("go", "mod", "tidy")
 	tidyCommand.Dir = projectPath
-
-	commands = append(commands, modCommand)
 	commands = append(commands, tidyCommand)
+
+	buildCommand := exec.Command("go", "build")
+	buildCommand.Dir = projectPath
+	commands = append(commands, buildCommand)
 
 	for _, command := range commands {
 		var errb bytes.Buffer
@@ -137,7 +158,7 @@ func (s *strategy) BuildPostActions(projectPath string) error {
 		err := command.Run()
 
 		if err != nil {
-			return fmt.Errorf("on running command: %v: %s", err, errb.String())
+			return fmt.Errorf("on running command %s: %v: %s", command.String(), err, errb.String())
 		}
 	}
 
@@ -192,6 +213,12 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 		"buildValidations": buildValidations,
 		"getNestedEntities": func(entity string) []entities.Entity {
 			return getNestedEntities(entity, s.Definitions)
+		},
+		"hasAuthentication": func() bool {
+			return hasAuthentication(s.Definitions)
+		},
+		"getAuthEntity": func() *entities.Entity {
+			return getAuthEntity(s.Definitions)
 		},
 	}
 
@@ -276,6 +303,19 @@ func isANestedEntity(entity string, definitions *entities.Definitions) bool {
 		}
 	}
 	return false
+}
+
+func hasAuthentication(definitions *entities.Definitions) bool {
+	return len(definitions.App.Authentication.Entity) > 0
+}
+
+func getAuthEntity(definitions *entities.Definitions) *entities.Entity {
+	for _, e := range definitions.App.Entities {
+		if e.Name == definitions.App.Authentication.Entity {
+			return &e
+		}
+	}
+	return nil
 }
 
 func NewStrategy(definitions *entities.Definitions) entities.Strategy {

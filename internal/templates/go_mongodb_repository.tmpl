@@ -7,7 +7,10 @@ import (
 	"{{.Definitions.App.Repository}}/internal/entities"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+
+{{range .Entity.Actions}}{{if eq .Type "getAll"}}
 	"go.mongodb.org/mongo-driver/mongo/options"
+{{end}}{{end}}
 )
 
 const (
@@ -18,23 +21,21 @@ const (
 type Repository interface {
 {{range .Entity.Actions}}
 {{if eq .Type "create"}}
-	Create(*entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error)
-{{end}}
-{{if eq .Type "getOne"}}
-	GetOne(*GetOneParam) (*entities.{{camelize $.Entity.Name}}, error)
+	Create(*entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error)
 {{end}}
 {{if eq .Type "getAll"}}
-	GetAll(*GetAllParams) ([]*entities.{{camelize $.Entity.Name}}, error)
+	GetAll(*GetAllParams) ([]*entities.{{capitalize $.Entity.Name}}, error)
 
 	Count(*GetAllParams) (int64, error)
 {{end}}
 {{if eq .Type "update"}}
-	Update(*entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error)
+	Update(*entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error)
 {{end}}
 {{if eq .Type "delete"}}
-	Delete(*entities.{{camelize $.Entity.Name}}) (bool, error)
+	Delete(*entities.{{capitalize $.Entity.Name}}) (bool, error)
 {{end}}
 {{end}}
+	GetOne(*GetOneParams) (*entities.{{capitalize $.Entity.Name}}, error)
 }
 
 type repository struct {
@@ -44,7 +45,7 @@ type repository struct {
 {{range .Entity.Actions}}
 {{if eq .Type "create"}}
 // Create - Create one {{$.Entity.Name}}
-func (s *repository) Create({{$.Entity.Name}} *entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error) {
+func (s *repository) Create({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
 	_, err := s.client.
 		Database(DatabaseName).
 		Collection(CollectionName).
@@ -57,37 +58,11 @@ func (s *repository) Create({{$.Entity.Name}} *entities.{{camelize $.Entity.Name
 	return {{$.Entity.Name}}, nil
 }
 {{end}}
-{{if eq .Type "getOne"}}
-// GetOne - Get one project by parameters
-func (s *repository) GetOne(params *GetOneParam) (*entities.{{camelize $.Entity.Name}}, error) {
-	var result []*entities.{{camelize $.Entity.Name}}
 
-	cursor, err := s.client.
-		Database(DatabaseName).
-		Collection(CollectionName).
-		Find(context.TODO(), params)
-
-	if err != nil {
-		panic(err)
-	}
-
-	err = cursor.All(context.TODO(), &result)
-
-	if err != nil {
-		return nil, fmt.Errorf("while parsing {{$.Entity.Name}}: %w", err)
-	}
-
-	if len(result) == 0 {
-		return nil, nil
-	}
-
-	return result[0], nil
-}
-{{end}}
 {{if eq .Type "getAll"}}
 // GetAll - Gets all the {{pluralize $.Entity.Name}} given a set of parameters
-func (s *repository) GetAll(params *GetAllParams) ([]*entities.Project, error) {
-	var result []*entities.{{camelize $.Entity.Name}}
+func (s *repository) GetAll(params *GetAllParams) ([]*entities.{{capitalize $.Entity.Name}}, error) {
+	var result []*entities.{{capitalize $.Entity.Name}}
 
 	skip := params.PageIndex * params.Limit
 
@@ -107,7 +82,7 @@ func (s *repository) GetAll(params *GetAllParams) ([]*entities.Project, error) {
 	}
 
 	if result == nil {
-		return make([]*entities.{{camelize $.Entity.Name}}, 0), nil
+		return make([]*entities.{{capitalize $.Entity.Name}}, 0), nil
 	}
 
 	return result, nil
@@ -130,7 +105,7 @@ func (s *repository) Count(params *GetAllParams) (int64, error) {
 {{end}}
 {{if eq .Type "update"}}
 // Update - Update one {{$.Entity.Name}}
-func (s *repository) Update({{$.Entity.Name}} *entities.{{camelize $.Entity.Name}}) (*entities.{{camelize $.Entity.Name}}, error) {
+func (s *repository) Update({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
 	_, err := s.client.
 		Database(DatabaseName).
 		Collection(CollectionName).
@@ -145,7 +120,7 @@ func (s *repository) Update({{$.Entity.Name}} *entities.{{camelize $.Entity.Name
 {{end}}
 {{if eq .Type "delete"}}
 // Delete - Deletes one {{$.Entity.Name}}
-func (s *repository) Delete({{$.Entity.Name}} *entities.{{camelize $.Entity.Name}}) (bool, error) {
+func (s *repository) Delete({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (bool, error) {
 	_, err := s.client.
 		Database(DatabaseName).
 		Collection(CollectionName).
@@ -159,6 +134,31 @@ func (s *repository) Delete({{$.Entity.Name}} *entities.{{camelize $.Entity.Name
 }
 {{end}}
 {{end}}
+// GetOne - Get one {{$.Entity.Name}} by parameters
+func (s *repository) GetOne(params *GetOneParams) (*entities.{{capitalize $.Entity.Name}}, error) {
+	var result []*entities.{{capitalize $.Entity.Name}}
+
+	cursor, err := s.client.
+		Database(DatabaseName).
+		Collection(CollectionName).
+		Find(context.TODO(), params)
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = cursor.All(context.TODO(), &result)
+
+	if err != nil {
+		return nil, fmt.Errorf("while parsing {{$.Entity.Name}}: %w", err)
+	}
+
+	if len(result) == 0 {
+		return nil, nil
+	}
+
+	return result[0], nil
+}
 
 func NewRepository(c *mongo.Client) Repository {
 	return &repository{c}

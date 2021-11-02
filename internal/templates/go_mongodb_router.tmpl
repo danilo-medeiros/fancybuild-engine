@@ -1,7 +1,9 @@
 package router
 
 import (
+{{if hasAuthentication}}
 	"{{.App.Repository}}/internal/auth"
+{{end}}
 	"{{.App.Repository}}/internal/healthcheck"
 {{range .App.Entities}}
 {{if hasController .Name}}
@@ -14,27 +16,65 @@ import (
 
 func Router(app *fiber.App, client *mongo.Client) {
 	hc := healthcheck.NewController()
-{{range .App.Entities}}{{
-    $controller := camelize .Name "controller"
-}}    {{$controller}} := {{.Name}}.NewController(
+{{range .App.Entities}}
+{{if hasController .Name}}
+{{if (eq .Name $.App.Authentication.Entity)}}
+	{{.Name}}Service := {{.Name}}.NewService(
+		{{.Name}}.NewRepository(
+			client,
+		),
+	)
+{{end}}
+
+{{$controller := camelize .Name "controller"}}
+    {{$controller}} := {{.Name}}.NewController(
+{{if (eq .Name $.App.Authentication.Entity)}}
+		{{.Name}}Service,
+{{else}}
 		{{.Name}}.NewService(
 			{{.Name}}.NewRepository(
 				client,
 			),
 		),
+{{end}}
 	)
+{{end}}
 {{end}}
 	v1 := app.Group("/v1")
 	v1.Get("/", hc.Get)
-{{range .App.Entities}}{{if hasController .Name}}{{
-      $group := camelize .Name "grp"}}{{
-      $controller := camelize .Name "controller"}}
+{{range .App.Entities}}
+{{if hasController .Name}}
+{{$group := camelize .Name "grp"}}{{$controller := camelize .Name "controller"}}
     {{$group}} := v1.Group("/{{pluralize .Name}}")
-{{range .Actions}}{{if eq .Type "create"}}
-    {{$group}}.Post("/", {{$controller}}.Create){{end}}{{if eq .Type "getOne"}}
-    {{$group}}.Get("/:id", {{$controller}}.GetOne){{end}}{{if eq .Type "getAll"}}
-    {{$group}}.Get("/", {{$controller}}.GetAll){{end}}{{if eq .Type "update"}}
+{{range .Actions}}
+{{if eq .Type "create"}}
+    {{$group}}.Post("/", {{$controller}}.Create)
+{{end}}
+{{if eq .Type "getOne"}}
+    {{$group}}.Get("/:id", {{$controller}}.GetOne)
+{{end}}
+{{if eq .Type "getAll"}}
+    {{$group}}.Get("/", {{$controller}}.GetAll)
+{{end}}
+{{if eq .Type "update"}}
     {{$group}}.Put("/:id", {{$controller}}.Update)
-    {{$group}}.Patch("/:id", {{$controller}}.Update){{end}}{{if eq .Type "delete"}}
-    {{$group}}.Delete("/:id", {{$controller}}.Delete){{end}}{{end}}{{end}}{{end}}	
+    {{$group}}.Patch("/:id", {{$controller}}.Update)
+{{end}}
+{{if eq .Type "delete"}}
+    {{$group}}.Delete("/:id", {{$controller}}.Delete)
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{if hasAuthentication}}
+	authService := auth.NewController(
+		{{.App.Authentication.Entity}}Service,
+	)
+
+	authGrp := v1.Group("/auth")
+	authGrp.Post("/signin", authService.SignIn)
+	authGrp.Post("/signout", authService.SignOut)
+	authGrp.Get("/me", authService.Me)
+{{end}}
 }

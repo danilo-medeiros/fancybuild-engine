@@ -63,7 +63,7 @@ func (c *controller) Create(ctx *fiber.Ctx) error {
 {{if eq .Type "getOne"}}
 // GetOne - Get one {{$.Entity.Name}} by parameters
 func (c *controller) GetOne(ctx *fiber.Ctx) error {
-	params := GetOneParam{
+	params := GetOneParams{
 		ID: ctx.Params("id"),
 {{if belongsToAuthenticatedEntity $.Entity.Name}}
 		{{capitalize $.Definitions.App.Authentication.Entity}}ID: ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string),
@@ -142,7 +142,7 @@ func (c *controller) Update(ctx *fiber.Ctx) error {
 {{if eq .Type "delete"}}
 // Delete - Hard delete one {{$.Entity.Name}}
 func (c *controller) Delete(ctx *fiber.Ctx) error {
-	params := GetOneParam{
+	params := GetOneParams{
 		ID: ctx.Params("id"),
 {{if belongsToAuthenticatedEntity $.Entity.Name}}
 		{{capitalize $.Definitions.App.Authentication.Entity}}ID: ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string),

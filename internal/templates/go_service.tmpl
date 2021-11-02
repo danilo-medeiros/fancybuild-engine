@@ -5,7 +5,19 @@ import (
 
 	"{{.Definitions.App.Repository}}/internal/entities"
 	"github.com/google/uuid"
+{{if (eq $.Entity.Name $.Definitions.App.Authentication.Entity)}}
+	"golang.org/x/crypto/bcrypt"
+	"fmt"
+{{end}}
 )
+
+{{if (eq $.Entity.Name $.Definitions.App.Authentication.Entity)}}
+type UpdatePassword struct {
+	ID              string `bson:"id"`
+	CurrentPassword string `bson:"-" json:"currentPassword"`
+	NewPassword     string `bson:"-" json:"newPassword"`
+}
+{{end}}
 
 {{if entityHasAction .Entity.Name "getAll"}}
 type GetAllParams struct {
@@ -14,18 +26,21 @@ type GetAllParams struct {
 	UserID string `query:"-" bson:"userId,omitempty"`
 {{end}}
 {{range $.Entity.Fields}}
-	{{capitalize .Name}}                {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty"`
+	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty"`
 {{end}}
 }
 {{end}}
 
 {{if or (entityHasAction .Entity.Name "getOne")
   (entityHasAction .Entity.Name "update")}}
-type GetOneParam struct {
+type GetOneParams struct {
 {{if belongsToAuthenticatedEntity $.Entity.Name}}
 	UserID string `query:"-" bson:"userId,omitempty"`
 {{end}}
-	ID     string `bson:"id,omitempty"`
+	ID string `bson:"id,omitempty"`
+{{range $.Entity.Fields}}
+	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty"`
+{{end}}
 }
 {{end}}
 
@@ -33,9 +48,6 @@ type Service interface {
 {{range .Entity.Actions}}
 {{if eq .Type "create"}}
 	Create(*entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error)
-{{end}}
-{{if eq .Type "getOne"}}
-	GetOne(*GetOneParam) (*entities.{{capitalize $.Entity.Name}}, error)
 {{end}}
 {{if eq .Type "getAll"}}
 	GetAll(*GetAllParams) (*entities.PaginatedResult, error)
@@ -47,6 +59,7 @@ type Service interface {
 	Delete(*entities.{{capitalize $.Entity.Name}}) (bool, error)
 {{end}}
 {{end}}
+	GetOne(*GetOneParams) (*entities.{{capitalize $.Entity.Name}}, error)
 }
 
 type service struct {
@@ -64,12 +77,6 @@ func (s *service) Create({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}
 	{{$.Entity.Name}}.UpdatedAt = now
 {{end}}
 	return s.repository.Create({{$.Entity.Name}})
-}
-{{end}}
-{{if eq .Type "getOne"}}
-// GetOne - Get one {{$.Entity.Name}} by parameters
-func (s *service) GetOne(params *GetOneParam) (*entities.{{capitalize $.Entity.Name}}, error) {
-	return s.repository.GetOne(params)
 }
 {{end}}
 {{if eq .Type "getAll"}}
@@ -101,8 +108,8 @@ func (s *service) GetAll(params *GetAllParams) (*entities.PaginatedResult, error
 {{end}}
 {{if eq .Type "update"}}
 // Update - Update one {{$.Entity.Name}}
-func (s *service) Update({{pluralize $.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
-	{{$.Entity.Name}}, err := s.repository.GetOne(&GetOneParam{
+func (s *service) Update({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
+	{{$.Entity.Name}}, err := s.repository.GetOne(&GetOneParams{
 {{if belongsToAuthenticatedEntity $.Entity.Name}}
 		UserID: {{$.Entity.Name}}.UserID,
 {{end}}
@@ -128,6 +135,39 @@ func (s *service) Delete({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}
 	return s.repository.Delete({{$.Entity.Name}})
 }
 {{end}}
+{{end}}
+// GetOne - Get one {{$.Entity.Name}} by parameters
+func (s *service) GetOne(params *GetOneParams) (*entities.{{capitalize $.Entity.Name}}, error) {
+	return s.repository.GetOne(params)
+}
+
+{{if (eq $.Entity.Name $.Definitions.App.Authentication.Entity)}}
+func (s *service) UpdatePassword(params *UpdatePassword) (*entities.{{capitalize $.Entity.Name}}, error) {
+	user, err := s.repository.GetOne(&GetOneParams{ID: params.ID})
+
+	if err != nil {
+		return nil, err
+	}
+
+	if CheckPassword(params.CurrentPassword, {{$.Entity.Name}}.Password) {
+		return s.repository.Update(&entities.{{capitalize $.Entity.Name}}{
+			ID: params.ID,
+			Password: params.NewPassword,
+		})
+	}
+
+	return nil, fmt.Errorf("invalid password")
+}
+
+func CheckPassword(password, hash string) bool {
+	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(password))
+	return err == nil
+}
+
+func HashPassword(password string) (string, error) {
+	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	return string(bytes), err
+}
 {{end}}
 
 func NewService(r Repository) Service {
