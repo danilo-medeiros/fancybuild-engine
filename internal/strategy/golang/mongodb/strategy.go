@@ -85,7 +85,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		data.Definitions = s.Definitions
 		data.Entity = entity
 
-		if hasController(entity.Name, s.Definitions) {
+		if hasController(entity, s.Definitions) {
 			fileMap[fmt.Sprintf("%s_controller", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/controller.go", entity.Name),
 				TemplatePath: "go_controller.tmpl",
@@ -93,7 +93,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			}
 		}
 
-		if hasService(entity.Name, s.Definitions) {
+		if hasService(entity, s.Definitions) {
 			fileMap[fmt.Sprintf("%s_service", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/service.go", entity.Name),
 				TemplatePath: "go_service.tmpl",
@@ -101,7 +101,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			}
 		}
 
-		if hasRepository(entity.Name, s.Definitions) {
+		if hasRepository(entity, s.Definitions) {
 			fileMap[fmt.Sprintf("%s_repository", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/repository.go", entity.Name),
 				TemplatePath: "go_mongodb_repository.tmpl",
@@ -192,7 +192,7 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 			return fmt.Sprintf("%ss", text)
 		},
 		"replaceAll": strings.ReplaceAll,
-		"hasController": func(entity string) bool {
+		"hasController": func(entity entities.Entity) bool {
 			return hasController(entity, s.Definitions)
 		},
 		"belongsToAuthenticatedEntity": func(entity string) bool {
@@ -211,7 +211,7 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 			return false
 		},
 		"buildValidations": buildValidations,
-		"getNestedEntities": func(entity string) []entities.Entity {
+		"getNestedEntities": func(entity entities.Entity) []entities.Entity {
 			return getNestedEntities(entity, s.Definitions)
 		},
 		"hasAuthentication": func() bool {
@@ -219,6 +219,12 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 		},
 		"getAuthEntity": func() *entities.Entity {
 			return getAuthEntity(s.Definitions)
+		},
+		"empty": func(text string) bool {
+			return len(text) == 0
+		},
+		"findEntity": func(entity string) *entities.Entity {
+			return findEntity(entity, s.Definitions)
 		},
 	}
 
@@ -250,16 +256,16 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 	return nil
 }
 
-func hasController(entity string, definitions *entities.Definitions) bool {
-	return !isANestedEntity(entity, definitions)
+func hasController(entity entities.Entity, definitions *entities.Definitions) bool {
+	return entity.Persisted && !isANestedEntity(entity, definitions)
 }
 
-func hasService(entity string, definitions *entities.Definitions) bool {
-	return !isANestedEntity(entity, definitions)
+func hasService(entity entities.Entity, definitions *entities.Definitions) bool {
+	return entity.Persisted && !isANestedEntity(entity, definitions)
 }
 
-func hasRepository(entity string, definitions *entities.Definitions) bool {
-	return !isANestedEntity(entity, definitions)
+func hasRepository(entity entities.Entity, definitions *entities.Definitions) bool {
+	return entity.Persisted && !isANestedEntity(entity, definitions)
 }
 
 func belongsToAuthenticatedEntity(entity string, definitions *entities.Definitions) bool {
@@ -278,6 +284,8 @@ func buildValidations(field entities.Field) string {
 		switch validation.Name {
 		case "required":
 			validations = append(validations, "required")
+		case "type":
+			validations = append(validations, validation.Value)
 		default:
 			validations = append(validations, fmt.Sprintf("%s=%s", validation.Name, validation.Value))
 		}
@@ -286,19 +294,19 @@ func buildValidations(field entities.Field) string {
 	return strings.Join(validations, ",")
 }
 
-func getNestedEntities(entity string, definitions *entities.Definitions) []entities.Entity {
+func getNestedEntities(entity entities.Entity, definitions *entities.Definitions) []entities.Entity {
 	result := make([]entities.Entity, 0)
 	for _, ent := range definitions.App.Entities {
-		if isANestedEntity(ent.Name, definitions) && entity == ent.Name {
+		if isANestedEntity(ent, definitions) && entity.Name == ent.Name {
 			result = append(result, ent)
 		}
 	}
 	return result
 }
 
-func isANestedEntity(entity string, definitions *entities.Definitions) bool {
+func isANestedEntity(entity entities.Entity, definitions *entities.Definitions) bool {
 	for _, r := range definitions.App.Relationships {
-		if r.Item2 == entity && r.Type == "hasMany" {
+		if r.Item2 == entity.Name && r.Type == "hasMany" {
 			return true
 		}
 	}
@@ -312,6 +320,15 @@ func hasAuthentication(definitions *entities.Definitions) bool {
 func getAuthEntity(definitions *entities.Definitions) *entities.Entity {
 	for _, e := range definitions.App.Entities {
 		if e.Name == definitions.App.Authentication.Entity {
+			return &e
+		}
+	}
+	return nil
+}
+
+func findEntity(entity string, definitions *entities.Definitions) *entities.Entity {
+	for _, e := range definitions.App.Entities {
+		if e.Name == entity {
 			return &e
 		}
 	}

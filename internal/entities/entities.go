@@ -9,19 +9,23 @@ type Field struct {
 	Name        string       `json:"name"`
 	Type        string       `json:"type"`
 	Validations []Validation `json:"validations"`
+	Secret      bool         `json:"secret"`
+	Hashed      bool         `json:"hashed"`
+}
+
+type Input struct {
+	Entity string `json:"entity"`
+}
+
+type Output struct {
+	Entity string `json:"entity"`
 }
 
 type Action struct {
 	Type          string `json:"type"`
 	Authenticated bool   `json:"authenticated"`
-}
-
-type Entity struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Fields      []Field  `json:"fields"`
-	Timestamps  bool     `json:"timestamps"`
-	Actions     []Action `json:"actions"`
+	Input         Input  `json:"input"`
+	Output        Output `json:"output"`
 }
 
 type Relationship struct {

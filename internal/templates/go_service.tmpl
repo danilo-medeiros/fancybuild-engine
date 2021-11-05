@@ -76,6 +76,17 @@ func (s *service) Create({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}
 	{{$.Entity.Name}}.CreatedAt = now
 	{{$.Entity.Name}}.UpdatedAt = now
 {{end}}
+{{range $.Entity.Fields}}
+{{if .Hashed}}
+	{{.Name}}, err := HashPassword({{$.Entity.Name}}.{{capitalize .Name}})
+
+	if err != nil {
+		return nil, fmt.Errorf("error hashing {{.Name}}: %s", err)
+	}
+
+	{{$.Entity.Name}}.{{capitalize .Name}} = {{.Name}}
+{{end}}
+{{end}}
 	return s.repository.Create({{$.Entity.Name}})
 }
 {{end}}

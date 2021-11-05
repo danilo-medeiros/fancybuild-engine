@@ -55,6 +55,22 @@ func (c *controller) Create(ctx *fiber.Ctx) error {
 		return err
 	}
 
+{{if (not (empty .Output.Entity))}}
+{{$outputEntity := findEntity .Output.Entity}}
+	{{$outputEntity.Name}} := &entities.{{capitalize $outputEntity.Name}}{
+{{range $outputEntity.Fields}}
+		{{capitalize .Name}}: result.{{capitalize .Name}},
+{{end}}
+{{if (and $.Entity.Timestamps $outputEntity.Timestamps)}}
+		Timestamps: result.Timestamps,
+{{end}}
+	}
+
+	return ctx.JSON(&entities.SingleResult{
+		Data: {{$outputEntity.Name}},
+	})
+{{end}}
+
 	return ctx.JSON(&entities.SingleResult{
 		Data: result,
 	})

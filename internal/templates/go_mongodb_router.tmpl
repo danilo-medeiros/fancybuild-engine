@@ -6,7 +6,7 @@ import (
 {{end}}
 	"{{.App.Repository}}/internal/healthcheck"
 {{range .App.Entities}}
-{{if hasController .Name}}
+{{if hasController .}}
 	"{{$.App.Repository}}/internal/{{.Name}}"
 {{end}}
 {{end}}
@@ -17,7 +17,7 @@ import (
 func Router(app *fiber.App, client *mongo.Client) {
 	hc := healthcheck.NewController()
 {{range .App.Entities}}
-{{if hasController .Name}}
+{{if hasController .}}
 {{if (eq .Name $.App.Authentication.Entity)}}
 	{{.Name}}Service := {{.Name}}.NewService(
 		{{.Name}}.NewRepository(
@@ -43,25 +43,50 @@ func Router(app *fiber.App, client *mongo.Client) {
 	v1 := app.Group("/v1")
 	v1.Get("/", hc.Get)
 {{range .App.Entities}}
-{{if hasController .Name}}
+{{if hasController .}}
 {{$group := camelize .Name "grp"}}{{$controller := camelize .Name "controller"}}
     {{$group}} := v1.Group("/{{pluralize .Name}}")
+{{$isAuthenticatedEntity := .IsAuthenticated}}
+{{if $isAuthenticatedEntity}}
+	{{$group}}.Use(auth.Handler)
+{{end}}
 {{range .Actions}}
 {{if eq .Type "create"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Post("/", auth.Handler, {{$controller}}.Create)
+{{else}}
     {{$group}}.Post("/", {{$controller}}.Create)
 {{end}}
+{{end}}
 {{if eq .Type "getOne"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Get("/:id", auth.Handler, {{$controller}}.GetOne)
+{{else}}
     {{$group}}.Get("/:id", {{$controller}}.GetOne)
 {{end}}
+{{end}}
 {{if eq .Type "getAll"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Get("/", auth.Handler, {{$controller}}.GetAll)
+{{else}}
     {{$group}}.Get("/", {{$controller}}.GetAll)
 {{end}}
+{{end}}
 {{if eq .Type "update"}}
-    {{$group}}.Put("/:id", {{$controller}}.Update)
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Put("/:id", auth.Handler, {{$controller}}.Update)
+    {{$group}}.Patch("/:id", auth.Handler, {{$controller}}.Update)
+{{else}}
+	{{$group}}.Put("/:id", {{$controller}}.Update)
     {{$group}}.Patch("/:id", {{$controller}}.Update)
 {{end}}
+{{end}}
 {{if eq .Type "delete"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Delete("/:id", auth.Handler, {{$controller}}.Delete)
+{{else}}
     {{$group}}.Delete("/:id", {{$controller}}.Delete)
+{{end}}
 {{end}}
 {{end}}
 {{end}}
