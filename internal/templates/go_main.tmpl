@@ -14,33 +14,41 @@ import (
 	"github.com/joho/godotenv"
 )
 
-func main() {
-	app := fiber.New(fiber.Config{
-		ErrorHandler:          errors.Handler,
-		DisableStartupMessage: true,
-		AppName:               "todoapp",
-	})
+type Terminate func()
 
+func Setup() (*fiber.App, Terminate) {
 	err := godotenv.Load()
 
 	if err != nil {
 		panic(err)
 	}
 
+	ctx, client := database.Connect()
+	log.Default().Println("successfully connected to database")
+
+	app := fiber.New(fiber.Config{
+		ErrorHandler:          errors.Handler,
+		DisableStartupMessage: true,
+		AppName:               "{{.App.Name}}",
+	})
+
 	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	app.Use(logger.New())
 
-	ctx, client := database.Connect()
-
-	log.Default().Println("successfully connected to database")
-
-	defer func() {
-		database.Disconnect(ctx, client)
-	}()
-
 	router.Router(app, client)
 
-	err = app.Listen(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
+	return app, func() {
+		database.Disconnect(ctx, client)
+	}
+}
+
+func main() {
+	app, terminate := Setup()
+
+	defer terminate()
+
+	log.Default().Printf("listening on port %s\n", os.Getenv("PORT"))
+	err := app.Listen(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
 
 	if err != nil {
 		panic(err)

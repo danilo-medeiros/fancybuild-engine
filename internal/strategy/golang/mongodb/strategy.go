@@ -59,6 +59,10 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			FinalPath:    "README.md",
 			TemplatePath: "go_readme.tmpl",
 		},
+		"main_test": {
+			FinalPath:    "main_test.go",
+			TemplatePath: "go_main_test.tmpl",
+		},
 	}
 
 	if len(s.Definitions.App.Authentication.Entity) != 0 {
@@ -151,6 +155,10 @@ func (s *strategy) BuildPostActions(projectPath string) error {
 	buildCommand := exec.Command("go", "build")
 	buildCommand.Dir = projectPath
 	commands = append(commands, buildCommand)
+
+	testCommand := exec.Command("go", "test", ".")
+	testCommand.Dir = projectPath
+	commands = append(commands, testCommand)
 
 	for _, command := range commands {
 		var errb bytes.Buffer

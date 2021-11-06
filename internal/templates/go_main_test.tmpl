@@ -1,0 +1,65 @@
+package main
+
+import (
+	"io/ioutil"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+
+type testCase struct {
+	Description   string
+	Method        string
+	Route         string
+	RequestBody   string
+	ExpectedError bool
+	ExpectedCode  int
+	ExpectedBody  string
+}
+
+func TestIndexRoute(t *testing.T) {
+	tests := []testCase{
+		{
+			Description:   "healthcheck",
+			Route:         "/v1",
+			ExpectedError: false,
+			ExpectedCode:  200,
+			Method:        "GET",
+		},
+		{
+			Description:   "non existing route",
+			Route:         "/i-dont-exist",
+			ExpectedError: false,
+			ExpectedCode:  404,
+			ExpectedBody:  "Cannot GET /i-dont-exist",
+			Method:        "GET",
+		},
+	}
+
+	app, terminate := Setup()
+	defer terminate()
+
+	for _, test := range tests {
+		req, _ := http.NewRequest(
+			test.Method,
+			test.Route,
+			nil,
+		)
+
+		res, err := app.Test(req, -1)
+		assert.Equalf(t, test.ExpectedError, err != nil, test.Description)
+
+		if test.ExpectedError {
+			continue
+		}
+
+		assert.Equalf(t, test.ExpectedCode, res.StatusCode, test.Description)
+
+		if len(test.ExpectedBody) > 0 {
+			body, err := ioutil.ReadAll(res.Body)
+			assert.Nilf(t, err, test.Description)
+			assert.Equalf(t, test.ExpectedBody, string(body), test.Description)
+		}
+	}
+}
