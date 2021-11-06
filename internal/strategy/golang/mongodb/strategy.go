@@ -35,9 +35,9 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			FinalPath:    "internal/entities/entities.go",
 			TemplatePath: "go_mongodb_entities.tmpl",
 		},
-		"healthcheck": {
-			FinalPath:    "internal/healthcheck/controller.go",
-			TemplatePath: "go_mongodb_healthcheck.tmpl",
+		"health": {
+			FinalPath:    "internal/health/controller.go",
+			TemplatePath: "go_mongodb_health.tmpl",
 		},
 		"database": {
 			FinalPath:    "internal/database/database.go",

@@ -21,8 +21,8 @@ type testCase struct {
 func TestIndexRoute(t *testing.T) {
 	tests := []testCase{
 		{
-			Description:   "healthcheck",
-			Route:         "/v1",
+			Description:   "health",
+			Route:         "/health",
 			ExpectedError: false,
 			ExpectedCode:  200,
 			Method:        "GET",
