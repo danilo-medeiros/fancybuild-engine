@@ -10,6 +10,7 @@ import (
 	"text/template"
 
 	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
+	"github.com/danilo-medeiros/fancybuild/engine/internal/templates"
 )
 
 type strategy struct {
@@ -18,6 +19,10 @@ type strategy struct {
 }
 
 func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
+	for _, entity := range s.Definitions.App.Entities {
+		entity.Definitions = s.Definitions
+	}
+
 	fileMap := map[string]*entities.File{
 		"main": {
 			FinalPath:    "main.go",
@@ -77,19 +82,19 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 	}
 
 	for _, file := range fileMap {
-		file.Data = s.Definitions
+		file.Data = &s.Definitions
 	}
 
 	for _, entity := range s.Definitions.App.Entities {
 		var data struct {
 			*entities.Definitions
-			entities.Entity
+			*entities.Entity
 		}
 
 		data.Definitions = s.Definitions
 		data.Entity = entity
 
-		if hasController(entity, s.Definitions) {
+		if entity.HasController() {
 			fileMap[fmt.Sprintf("%s_controller", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/controller.go", entity.Name),
 				TemplatePath: "go_controller.tmpl",
@@ -97,7 +102,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			}
 		}
 
-		if hasService(entity, s.Definitions) {
+		if entity.HasService() {
 			fileMap[fmt.Sprintf("%s_service", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/service.go", entity.Name),
 				TemplatePath: "go_service.tmpl",
@@ -105,7 +110,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			}
 		}
 
-		if hasRepository(entity, s.Definitions) {
+		if entity.HasRepository() {
 			fileMap[fmt.Sprintf("%s_repository", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/repository.go", entity.Name),
 				TemplatePath: "go_mongodb_repository.tmpl",
@@ -175,65 +180,14 @@ func (s *strategy) BuildPostActions(projectPath string) error {
 
 func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 	funcMap := template.FuncMap{
-		"capitalize": func(text string) string {
-			splitted := strings.Split(text, "")
-			splitted[0] = strings.ToUpper(splitted[0])
-			return strings.Join(splitted, "")
-		},
-		"camelize": func(text ...string) string {
-			for index, part := range text {
-				if index == 0 {
-					continue
-				}
-
-				text[index] = fmt.Sprintf("%s%s", strings.ToUpper(string(part[0])), part[1:])
-			}
-
-			return strings.Join(text, "")
-		},
-		"slice": func(text string, start int, end int) string {
-			return text[start:end]
-		},
-		"split": strings.Split,
-		"pluralize": func(text string) string {
-			// TODO: Implement pluralization rules: https://www.grammarly.com/blog/plural-nouns/
-			return fmt.Sprintf("%ss", text)
-		},
-		"replaceAll": strings.ReplaceAll,
-		"hasController": func(entity entities.Entity) bool {
-			return hasController(entity, s.Definitions)
-		},
-		"belongsToAuthenticatedEntity": func(entity string) bool {
-			return belongsToAuthenticatedEntity(entity, s.Definitions)
-		},
-		"entityHasAction": func(entity string, action string) bool {
-			for _, ent := range s.Definitions.App.Entities {
-				if ent.Name == entity {
-					for _, act := range ent.Actions {
-						if act.Type == action {
-							return true
-						}
-					}
-				}
-			}
-			return false
-		},
+		"capitalize":       templates.Capitalize,
+		"camelize":         templates.Camelize,
+		"slice":            templates.Slice,
+		"split":            strings.Split,
+		"pluralize":        templates.Pluralize,
+		"replaceAll":       strings.ReplaceAll,
 		"buildValidations": buildValidations,
-		"getNestedEntities": func(entity entities.Entity) []entities.Entity {
-			return getNestedEntities(entity, s.Definitions)
-		},
-		"hasAuthentication": func() bool {
-			return hasAuthentication(s.Definitions)
-		},
-		"getAuthEntity": func() *entities.Entity {
-			return getAuthEntity(s.Definitions)
-		},
-		"empty": func(text string) bool {
-			return len(text) == 0
-		},
-		"findEntity": func(entity string) *entities.Entity {
-			return findEntity(entity, s.Definitions)
-		},
+		"empty":            templates.Empty,
 	}
 
 	for key, file := range fileMap {
@@ -264,27 +218,6 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 	return nil
 }
 
-func hasController(entity entities.Entity, definitions *entities.Definitions) bool {
-	return entity.Persisted && !isANestedEntity(entity, definitions)
-}
-
-func hasService(entity entities.Entity, definitions *entities.Definitions) bool {
-	return entity.Persisted && !isANestedEntity(entity, definitions)
-}
-
-func hasRepository(entity entities.Entity, definitions *entities.Definitions) bool {
-	return entity.Persisted && !isANestedEntity(entity, definitions)
-}
-
-func belongsToAuthenticatedEntity(entity string, definitions *entities.Definitions) bool {
-	for _, r := range definitions.App.Relationships {
-		if r.Item2 == entity && r.Type == "privateHasMany" {
-			return true
-		}
-	}
-	return false
-}
-
 func buildValidations(field entities.Field) string {
 	validations := make([]string, 0)
 
@@ -300,47 +233,6 @@ func buildValidations(field entities.Field) string {
 	}
 
 	return strings.Join(validations, ",")
-}
-
-func getNestedEntities(entity entities.Entity, definitions *entities.Definitions) []entities.Entity {
-	result := make([]entities.Entity, 0)
-	for _, ent := range definitions.App.Entities {
-		if isANestedEntity(ent, definitions) && entity.Name == ent.Name {
-			result = append(result, ent)
-		}
-	}
-	return result
-}
-
-func isANestedEntity(entity entities.Entity, definitions *entities.Definitions) bool {
-	for _, r := range definitions.App.Relationships {
-		if r.Item2 == entity.Name && r.Type == "hasMany" {
-			return true
-		}
-	}
-	return false
-}
-
-func hasAuthentication(definitions *entities.Definitions) bool {
-	return len(definitions.App.Authentication.Entity) > 0
-}
-
-func getAuthEntity(definitions *entities.Definitions) *entities.Entity {
-	for _, e := range definitions.App.Entities {
-		if e.Name == definitions.App.Authentication.Entity {
-			return &e
-		}
-	}
-	return nil
-}
-
-func findEntity(entity string, definitions *entities.Definitions) *entities.Entity {
-	for _, e := range definitions.App.Entities {
-		if e.Name == entity {
-			return &e
-		}
-	}
-	return nil
 }
 
 func NewStrategy(definitions *entities.Definitions) entities.Strategy {

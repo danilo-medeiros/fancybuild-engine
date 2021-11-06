@@ -1,12 +1,52 @@
 package entities
 
 type Entity struct {
-	Name        string   `json:"name"`
-	Description string   `json:"description"`
-	Fields      []Field  `json:"fields"`
-	Timestamps  bool     `json:"timestamps"`
-	Actions     []Action `json:"actions"`
-	Persisted   bool     `json:"persisted"`
+	Name        string       `json:"name"`
+	Description string       `json:"description"`
+	Fields      []Field      `json:"fields"`
+	Timestamps  bool         `json:"timestamps"`
+	Actions     []Action     `json:"actions"`
+	Persisted   bool         `json:"persisted"`
+	Definitions *Definitions `json:"-"`
+}
+
+func (e Entity) IsNested() bool {
+	for _, r := range e.Definitions.App.Relationships {
+		if r.Item2 == e.Name && r.Type == "hasMany" && r.Nested {
+			return true
+		}
+	}
+	return false
+}
+
+func (e Entity) HasController() bool {
+	return e.Persisted && !e.IsNested()
+}
+
+func (e Entity) HasService() bool {
+	return e.Persisted && !e.IsNested()
+}
+
+func (e Entity) HasRepository() bool {
+	return e.Persisted && !e.IsNested()
+}
+
+func (e Entity) HasAction(action string) bool {
+	for _, act := range e.Actions {
+		if act.Type == action {
+			return true
+		}
+	}
+	return false
+}
+
+func (e Entity) BelongsToAuthenticatedEntity() bool {
+	for _, r := range e.Definitions.App.Relationships {
+		if r.Item2 == e.Name && r.Type == "privateHasMany" {
+			return true
+		}
+	}
+	return false
 }
 
 func (e Entity) IsAuthenticated() bool {
@@ -16,4 +56,14 @@ func (e Entity) IsAuthenticated() bool {
 		}
 	}
 	return true
+}
+
+func (e Entity) GetNestedEntities() []*Entity {
+	result := make([]*Entity, 0)
+	for _, ent := range e.Definitions.App.Entities {
+		if ent.IsNested() && e.Name == ent.Name {
+			result = append(result, ent)
+		}
+	}
+	return result
 }

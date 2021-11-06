@@ -1,12 +1,12 @@
 package router
 
 import (
-{{if hasAuthentication}}
+{{if .HasAuthentication}}
 	"{{.App.Repository}}/internal/auth"
 {{end}}
 	"{{.App.Repository}}/internal/health"
 {{range .App.Entities}}
-{{if hasController .}}
+{{if .HasController}}
 	"{{$.App.Repository}}/internal/{{.Name}}"
 {{end}}
 {{end}}
@@ -17,7 +17,7 @@ import (
 func Router(app *fiber.App, client *mongo.Client) {
 	hc := health.NewController()
 {{range .App.Entities}}
-{{if hasController .}}
+{{if .HasController}}
 {{if (eq .Name $.App.Authentication.Entity)}}
 	{{.Name}}Service := {{.Name}}.NewService(
 		{{.Name}}.NewRepository(
@@ -43,7 +43,7 @@ func Router(app *fiber.App, client *mongo.Client) {
 	app.Get("/health", hc.Get)
 	v1 := app.Group("/v1")
 {{range .App.Entities}}
-{{if hasController .}}
+{{if .HasController}}
 {{$group := camelize .Name "grp"}}{{$controller := camelize .Name "controller"}}
     {{$group}} := v1.Group("/{{pluralize .Name}}")
 {{$isAuthenticatedEntity := .IsAuthenticated}}
@@ -92,7 +92,7 @@ func Router(app *fiber.App, client *mongo.Client) {
 {{end}}
 {{end}}
 
-{{if hasAuthentication}}
+{{if .HasAuthentication}}
 	authService := auth.NewController(
 		{{.App.Authentication.Entity}}Service,
 	)

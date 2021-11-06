@@ -19,10 +19,10 @@ type UpdatePassword struct {
 }
 {{end}}
 
-{{if entityHasAction .Entity.Name "getAll"}}
+{{if .Entity.HasAction "getAll"}}
 type GetAllParams struct {
 	entities.Pagination `query:",inline" bson:"-"`
-{{if belongsToAuthenticatedEntity $.Entity.Name}}
+{{if $.Entity.BelongsToAuthenticatedEntity}}
 	UserID string `query:"-" bson:"userId,omitempty"`
 {{end}}
 {{range $.Entity.Fields}}
@@ -31,10 +31,10 @@ type GetAllParams struct {
 }
 {{end}}
 
-{{if or (entityHasAction .Entity.Name "getOne")
-  (entityHasAction .Entity.Name "update")}}
+{{if or (.Entity.HasAction "getOne")
+  (.Entity.HasAction "update")}}
 type GetOneParams struct {
-{{if belongsToAuthenticatedEntity $.Entity.Name}}
+{{if $.Entity.BelongsToAuthenticatedEntity}}
 	UserID string `query:"-" bson:"userId,omitempty"`
 {{end}}
 	ID string `bson:"id,omitempty"`
@@ -121,7 +121,7 @@ func (s *service) GetAll(params *GetAllParams) (*entities.PaginatedResult, error
 // Update - Update one {{$.Entity.Name}}
 func (s *service) Update({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
 	{{$.Entity.Name}}, err := s.repository.GetOne(&GetOneParams{
-{{if belongsToAuthenticatedEntity $.Entity.Name}}
+{{if $.Entity.BelongsToAuthenticatedEntity}}
 		UserID: {{$.Entity.Name}}.UserID,
 {{end}}
 		ID:     {{$.Entity.Name}}.ID,
