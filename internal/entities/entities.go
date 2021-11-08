@@ -5,27 +5,12 @@ type Validation struct {
 	Value string `json:"value"`
 }
 
-type Field struct {
-	Name        string       `json:"name"`
-	Type        string       `json:"type"`
-	Validations []Validation `json:"validations"`
-	Secret      bool         `json:"secret"`
-	Hashed      bool         `json:"hashed"`
-}
-
 type Input struct {
 	Entity string `json:"entity"`
 }
 
 type Output struct {
 	Entity string `json:"entity"`
-}
-
-type Action struct {
-	Type          string `json:"type"`
-	Authenticated bool   `json:"authenticated"`
-	Input         Input  `json:"input"`
-	Output        Output `json:"output"`
 }
 
 type Relationship struct {

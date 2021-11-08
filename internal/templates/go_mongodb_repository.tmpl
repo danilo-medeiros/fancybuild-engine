@@ -3,6 +3,7 @@ package {{.Entity.Name}}
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"{{.Definitions.App.Repository}}/internal/entities"
 	"go.mongodb.org/mongo-driver/bson"
@@ -11,11 +12,6 @@ import (
 {{range .Entity.Actions}}{{if eq .Type "getAll"}}
 	"go.mongodb.org/mongo-driver/mongo/options"
 {{end}}{{end}}
-)
-
-const (
-	DatabaseName   = "{{.Definitions.App.Name}}"
-	CollectionName = "{{pluralize .Entity.Name}}"
 )
 
 type Repository interface {
@@ -39,7 +35,9 @@ type Repository interface {
 }
 
 type repository struct {
-	client *mongo.Client
+	client     *mongo.Client
+	database   string
+	collection string
 }
 
 {{range .Entity.Actions}}
@@ -47,8 +45,8 @@ type repository struct {
 // Create - Create one {{$.Entity.Name}}
 func (s *repository) Create({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
 	_, err := s.client.
-		Database(DatabaseName).
-		Collection(CollectionName).
+		Database(s.database).
+		Collection(s.collection).
 		InsertOne(context.TODO(), {{$.Entity.Name}})
 
 	if err != nil {
@@ -67,8 +65,8 @@ func (s *repository) GetAll(params *GetAllParams) ([]*entities.{{capitalize $.En
 	skip := params.PageIndex * params.Limit
 
 	cursor, err := s.client.
-		Database(DatabaseName).
-		Collection(CollectionName).
+		Database(s.database).
+		Collection(s.collection).
 		Find(context.TODO(), params, &options.FindOptions{Limit: &params.Limit, Skip: &skip})
 
 	if err != nil {
@@ -92,8 +90,8 @@ func (s *repository) GetAll(params *GetAllParams) ([]*entities.{{capitalize $.En
 func (s *repository) Count(params *GetAllParams) (int64, error) {
 	params.Pagination.Count = 0
 	count, err := s.client.
-		Database(DatabaseName).
-		Collection(CollectionName).
+		Database(s.database).
+		Collection(s.collection).
 		CountDocuments(context.TODO(), params)
 
 	if err != nil {
@@ -107,8 +105,8 @@ func (s *repository) Count(params *GetAllParams) (int64, error) {
 // Update - Update one {{$.Entity.Name}}
 func (s *repository) Update({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (*entities.{{capitalize $.Entity.Name}}, error) {
 	_, err := s.client.
-		Database(DatabaseName).
-		Collection(CollectionName).
+		Database(s.database).
+		Collection(s.collection).
 		UpdateOne(context.TODO(), bson.M{"id": {{$.Entity.Name}}.ID}, {{$.Entity.Name}})
 
 	if err != nil {
@@ -122,8 +120,8 @@ func (s *repository) Update({{$.Entity.Name}} *entities.{{capitalize $.Entity.Na
 // Delete - Deletes one {{$.Entity.Name}}
 func (s *repository) Delete({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}}) (bool, error) {
 	_, err := s.client.
-		Database(DatabaseName).
-		Collection(CollectionName).
+		Database(s.database).
+		Collection(s.collection).
 		DeleteOne(context.TODO(), bson.M{"id": {{$.Entity.Name}}.ID})
 
 	if err != nil {
@@ -139,8 +137,8 @@ func (s *repository) GetOne(params *GetOneParams) (*entities.{{capitalize $.Enti
 	var result []*entities.{{capitalize $.Entity.Name}}
 
 	cursor, err := s.client.
-		Database(DatabaseName).
-		Collection(CollectionName).
+		Database(s.database).
+		Collection(s.collection).
 		Find(context.TODO(), params)
 
 	if err != nil {
@@ -161,5 +159,9 @@ func (s *repository) GetOne(params *GetOneParams) (*entities.{{capitalize $.Enti
 }
 
 func NewRepository(c *mongo.Client) Repository {
-	return &repository{c}
+	return &repository{
+		client:     c,
+		database:   os.Getenv("DB_NAME"),
+		collection: "{{pluralize .Entity.Name}}",
+	}
 }

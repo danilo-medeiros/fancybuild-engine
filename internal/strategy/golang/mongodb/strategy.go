@@ -21,6 +21,10 @@ type strategy struct {
 func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 	for _, entity := range s.Definitions.App.Entities {
 		entity.Definitions = s.Definitions
+
+		for _, action := range entity.Actions {
+			action.Entity = entity
+		}
 	}
 
 	fileMap := map[string]*entities.File{
@@ -59,6 +63,10 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		"env": {
 			FinalPath:    ".env",
 			TemplatePath: "go_mongodb_env.tmpl",
+		},
+		"env_test": {
+			FinalPath:    ".env.test",
+			TemplatePath: "go_mongodb_env_test.tmpl",
 		},
 		"readme": {
 			FinalPath:    "README.md",
@@ -188,6 +196,7 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 		"replaceAll":       strings.ReplaceAll,
 		"buildValidations": buildValidations,
 		"empty":            templates.Empty,
+		"join":             strings.Join,
 	}
 
 	for key, file := range fileMap {

@@ -5,7 +5,7 @@ type Entity struct {
 	Description string       `json:"description"`
 	Fields      []Field      `json:"fields"`
 	Timestamps  bool         `json:"timestamps"`
-	Actions     []Action     `json:"actions"`
+	Actions     []*Action    `json:"actions"`
 	Persisted   bool         `json:"persisted"`
 	Definitions *Definitions `json:"-"`
 }

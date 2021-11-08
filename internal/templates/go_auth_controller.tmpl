@@ -5,13 +5,14 @@ import (
 	"os"
 
 	"{{.App.Repository}}/internal/{{.App.Authentication.Entity}}"
+	"{{.App.Repository}}/internal/validator"
 	"github.com/gofiber/fiber/v2"
 	"github.com/golang-jwt/jwt"
 )
 
 type SignInParams struct {
-	Email    string `json:"email" bson:"email,omitempty"`
-	Password string `json:"password" bson:"-"`
+	Email    string `json:"email" bson:"email,omitempty" validate:"email"`
+	Password string `json:"password" bson:"-" validate:"min=8,max=12"`
 }
 
 type Controller interface {
@@ -27,6 +28,12 @@ type controller struct {
 func (c *controller) SignIn(ctx *fiber.Ctx) error {
 	var params SignInParams
 	err := ctx.BodyParser(&params)
+
+	if err != nil {
+		return err
+	}
+
+	err = validator.Validate(&params)
 
 	if err != nil {
 		return err
