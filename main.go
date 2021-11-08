@@ -17,7 +17,7 @@ const (
 )
 
 func main() {
-	data, err := os.ReadFile("./test/definition.json")
+	data, err := os.ReadFile("./examples/blog.json")
 
 	log.Println("reading definition file")
 

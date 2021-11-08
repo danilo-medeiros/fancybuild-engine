@@ -1,0 +1,153 @@
+{
+    "version": "1.0.0",
+    "app": {
+        "name": "blog",
+        "version": "1.0.0",
+        "type": "api",
+        "repository": "github.com/danilo-medeiros/blog",
+        "stack": {
+            "language": "go",
+            "database": "mongodb"
+        },
+        "entities": [
+            {
+                "name": "post",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            },
+                            {
+                                "name": "min",
+                                "value": "3"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "content",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            },
+                            {
+                                "name": "min",
+                                "value": "3"
+                            },
+                            {
+                                "name": "max",
+                                "value": "256"
+                            }
+                        ]
+                    }
+                ],
+                "timestamps": true,
+                "actions": [
+                    {
+                        "type": "create",
+                        "authenticated": true
+                    },
+                    {
+                        "type": "update",
+                        "authenticated": true
+                    },
+                    {
+                        "type": "getOne"
+                    },
+                    {
+                        "type": "getAll"
+                    }
+                ],
+                "persisted": true
+            },
+            {
+                "name": "user",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "min",
+                                "value": "8"
+                            },
+                            {
+                                "name": "max",
+                                "value": "12"
+                            },
+                            {
+                                "name": "required",
+                                "value": "true"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "email",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "type",
+                                "value": "email"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "password",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "min",
+                                "value": "8"
+                            },
+                            {
+                                "name": "max",
+                                "value": "12"
+                            }
+                        ],
+                        "secret": true,
+                        "hashed": true
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "create",
+                        "output": {
+                            "entity": "userInfo"
+                        }
+                    },
+                    {
+                        "type": "update"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": true
+            },
+            {
+                "name": "userInfo",
+                "fields": [
+                    {
+                        "name": "email",
+                        "type": "string"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": false
+            }
+        ],
+        "relationships": [
+            {
+                "item1": "user",
+                "item2": "post",
+                "type": "privateHasMany"
+            }
+        ],
+        "authentication": {
+            "entity": "user"
+        }
+    }
+}

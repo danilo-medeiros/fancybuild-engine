@@ -1,0 +1,163 @@
+{
+    "version": "1.0.0",
+    "app": {
+        "name": "todoapp",
+        "version": "1.0.0",
+        "type": "api",
+        "repository": "github.com/danilo-medeiros/todoapp",
+        "stack": {
+            "language": "go",
+            "database": "mongodb"
+        },
+        "entities": [
+            {
+                "name": "project",
+                "description": "A simple project",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            },
+                            {
+                                "name": "min",
+                                "value": "3"
+                            }
+                        ]
+                    }
+                ],
+                "timestamps": true,
+                "actions": [
+                    {
+                        "type": "create",
+                        "authenticated": true
+                    },
+                    {
+                        "type": "update",
+                        "authenticated": true
+                    },
+                    {
+                        "type": "delete",
+                        "authenticated": true
+                    },
+                    {
+                        "type": "getOne",
+                        "authenticated": true
+                    },
+                    {
+                        "type": "getAll",
+                        "authenticated": true
+                    }
+                ],
+                "persisted": true
+            },
+            {
+                "name": "task",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": true
+            },
+            {
+                "name": "user",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "min",
+                                "value": "8"
+                            },
+                            {
+                                "name": "max",
+                                "value": "12"
+                            },
+                            {
+                                "name": "required",
+                                "value": "true"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "email",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "type",
+                                "value": "email"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "password",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "min",
+                                "value": "8"
+                            },
+                            {
+                                "name": "max",
+                                "value": "12"
+                            }
+                        ],
+                        "secret": true,
+                        "hashed": true
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "create",
+                        "output": {
+                            "entity": "userInfo"
+                        }
+                    },
+                    {
+                        "type": "update"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": true
+            },
+            {
+                "name": "userInfo",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string"
+                    },
+                    {
+                        "name": "email",
+                        "type": "string"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": false
+            }
+        ],
+        "relationships": [
+            {
+                "nested": true,
+                "item1": "project",
+                "item2": "task",
+                "type": "hasMany"
+            },
+            {
+                "item1": "user",
+                "item2": "project",
+                "type": "privateHasMany"
+            }
+        ],
+        "authentication": {
+            "entity": "user"
+        }
+    }
+}
