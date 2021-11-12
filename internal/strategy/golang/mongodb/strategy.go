@@ -197,6 +197,7 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 		"buildValidations": buildValidations,
 		"empty":            templates.Empty,
 		"join":             strings.Join,
+		"mapSort":          mapSort,
 	}
 
 	for key, file := range fileMap {
@@ -242,6 +243,16 @@ func buildValidations(field entities.Field) string {
 	}
 
 	return strings.Join(validations, ",")
+}
+
+func mapSort(sort string) int {
+	switch sort {
+	case "asc":
+		return 1
+	case "desc":
+		return -1
+	}
+	return 1
 }
 
 func NewStrategy(definitions *entities.Definitions) entities.Strategy {

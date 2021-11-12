@@ -6,6 +6,9 @@ import (
 	"os"
 
 	"{{.Definitions.App.Repository}}/internal/entities"
+{{if or (.Entity.HasAction "create") (.Entity.HasAction "update") }}
+	"github.com/gofiber/fiber/v2"
+{{end}}
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 
@@ -48,6 +51,12 @@ func (s *repository) Create({{$.Entity.Name}} *entities.{{capitalize $.Entity.Na
 		Database(s.database).
 		Collection(s.collection).
 		InsertOne(context.TODO(), {{$.Entity.Name}})
+
+	if mongoErr, ok := err.(mongo.WriteException); ok {
+		if mongoErr.HasErrorCode(11000) {
+			return nil, fiber.NewError(409, mongoErr.Error())
+		}
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("error while creating {{pluralize $.Entity.Name}}: %w", err)
@@ -108,6 +117,12 @@ func (s *repository) Update({{$.Entity.Name}} *entities.{{capitalize $.Entity.Na
 		Database(s.database).
 		Collection(s.collection).
 		UpdateOne(context.TODO(), bson.M{"id": {{$.Entity.Name}}.ID}, {{$.Entity.Name}})
+
+	if mongoErr, ok := err.(mongo.WriteException); ok {
+		if mongoErr.HasErrorCode(11000) {
+			return nil, fiber.NewError(409, mongoErr.Error())
+		}
+	}
 
 	if err != nil {
 		return nil, fmt.Errorf("error while updating {{pluralize $.Entity.Name}}: %w", err)

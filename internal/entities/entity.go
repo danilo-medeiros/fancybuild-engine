@@ -7,6 +7,7 @@ type Entity struct {
 	Timestamps  bool         `json:"timestamps"`
 	Actions     []*Action    `json:"actions"`
 	Persisted   bool         `json:"persisted"`
+	Indexes     []*Index     `json:"indexes"`
 	Definitions *Definitions `json:"-"`
 }
 
