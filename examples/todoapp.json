@@ -78,7 +78,7 @@
                             },
                             {
                                 "name": "max",
-                                "value": "12"
+                                "value": "24"
                             },
                             {
                                 "name": "required",
@@ -125,7 +125,18 @@
                     }
                 ],
                 "timestamps": true,
-                "persisted": true
+                "persisted": true,
+                "indexes": [
+                    {
+                        "fields": [
+                            {
+                                "name": "email",
+                                "sort": "asc"
+                            }
+                        ],
+                        "unique": true
+                    }
+                ]
             },
             {
                 "name": "userInfo",

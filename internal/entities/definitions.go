@@ -27,3 +27,12 @@ func (d Definitions) FindEntity(entity string) *Entity {
 	}
 	return nil
 }
+
+func (d Definitions) HasIndexes() bool {
+	for _, e := range d.App.Entities {
+		if len(e.Indexes) > 0 {
+			return true
+		}
+	}
+	return false
+}

@@ -17,8 +17,8 @@ import (
 type Terminate func()
 
 func setup() (*fiber.App, Terminate) {
-	ctx, client := database.Connect()
-	log.Println("successfully connected to database")
+	db := database.New(os.Getenv("DB_URL"), os.Getenv("DB_NAME"))
+	client := db.Connect()
 
 	app := fiber.New(fiber.Config{
 		ErrorHandler:          errors.Handler,
@@ -32,7 +32,7 @@ func setup() (*fiber.App, Terminate) {
 	router.Router(app, client)
 
 	return app, func() {
-		database.Disconnect(ctx, client)
+		db.Disconnect()
 	}
 }
 
@@ -46,7 +46,7 @@ func main() {
 	app, terminate := setup()
 	defer terminate()
 
-	log.Default().Printf("listening on port %s\n", os.Getenv("PORT"))
+	log.Printf("listening on port %s\n", os.Getenv("PORT"))
 	err = app.Listen(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
 
 	if err != nil {

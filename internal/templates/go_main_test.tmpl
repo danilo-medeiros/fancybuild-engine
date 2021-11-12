@@ -252,7 +252,8 @@ func runTestCases(app *fiber.App, t *testing.T, tests []*testCase) {
 }
 
 func setupTests() (*fiber.App, teardownTests) {
-	ctx, client := database.Connect()
+	db := database.New(os.Getenv("DB_URL"), os.Getenv("DB_NAME"))
+	client := db.Connect()
 	err := client.Database(os.Getenv("DB_NAME")).Drop(context.Background())
 
 	if err != nil {
@@ -260,7 +261,7 @@ func setupTests() (*fiber.App, teardownTests) {
 	}
 
 	defer func() {
-		database.Disconnect(ctx, client)
+		db.Disconnect()
 	}()
 
 	app, terminate := setup()
