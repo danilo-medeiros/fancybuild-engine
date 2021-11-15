@@ -1,0 +1,176 @@
+{
+    "version": "1.0.0",
+    "app": {
+        "name": "ecommerce",
+        "version": "1.0.0",
+        "type": "api",
+        "repository": "github.com/danilo-medeiros/ecommerce",
+        "stack": {
+            "language": "go",
+            "database": "mongodb"
+        },
+        "entities": [
+            {
+                "name": "product",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            },
+                            {
+                                "name": "min",
+                                "value": "3"
+                            },
+                            {
+                                "name": "max",
+                                "value": "100"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "description",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            },
+                            {
+                                "name": "min",
+                                "value": "3"
+                            },
+                            {
+                                "name": "max",
+                                "value": "500"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "price",
+                        "type": "float64",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            }
+                        ]
+                    }
+                ],
+                "timestamps": true,
+                "actions": [
+                    {
+                        "type": "getOne"
+                    },
+                    {
+                        "type": "getAll"
+                    }
+                ],
+                "persisted": true
+            },
+            {
+                "name": "user",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "min",
+                                "value": "8"
+                            },
+                            {
+                                "name": "max",
+                                "value": "12"
+                            },
+                            {
+                                "name": "required",
+                                "value": "true"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "email",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "type",
+                                "value": "email"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "password",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "min",
+                                "value": "8"
+                            },
+                            {
+                                "name": "max",
+                                "value": "12"
+                            }
+                        ],
+                        "secret": true,
+                        "hashed": true
+                    }
+                ],
+                "actions": [
+                    {
+                        "type": "create",
+                        "output": {
+                            "entity": "userInfo"
+                        }
+                    },
+                    {
+                        "type": "update"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": true
+            },
+            {
+                "name": "userInfo",
+                "fields": [
+                    {
+                        "name": "email",
+                        "type": "string"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": false
+            },
+            {
+                "name": "sale",
+                "fields": [],
+                "timestamps": true,
+                "persisted": true,
+                "actions": [
+                    {
+                        "type": "create"
+                    }
+                ]
+            }
+        ],
+        "relationships": [
+            {
+                "item1": "user",
+                "item2": "sale",
+                "type": "privateHasMany"
+            },
+            {
+                "item1": "sale",
+                "item2": "product",
+                "type": "hasMany",
+                "nested": true
+            }
+        ],
+        "authentication": {
+            "entity": "user"
+        }
+    }
+}

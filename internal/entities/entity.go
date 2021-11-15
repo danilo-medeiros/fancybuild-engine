@@ -61,9 +61,9 @@ func (e Entity) IsAuthenticated() bool {
 
 func (e Entity) GetNestedEntities() []*Entity {
 	result := make([]*Entity, 0)
-	for _, ent := range e.Definitions.App.Entities {
-		if ent.IsNested() && e.Name == ent.Name {
-			result = append(result, ent)
+	for _, rel := range e.Definitions.App.Relationships {
+		if rel.Item1 == e.Name && rel.Nested && rel.Type == "hasMany" {
+			result = append(result, e.Definitions.FindEntity(rel.Item2))
 		}
 	}
 	return result

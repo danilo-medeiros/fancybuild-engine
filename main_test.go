@@ -17,6 +17,7 @@ func TestExamples(t *testing.T) {
 	files := []string{
 		"blog.json",
 		"todoapp.json",
+		"ecommerce.json",
 	}
 
 	for _, file := range files {

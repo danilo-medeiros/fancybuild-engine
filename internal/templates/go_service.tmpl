@@ -1,10 +1,11 @@
 package {{$.Entity.Name}}
 
 import (
+{{if .Entity.HasAction "create"}}
 	"time"
-
-	"{{.Definitions.App.Repository}}/internal/entities"
 	"github.com/google/uuid"
+{{end}}
+	"{{.Definitions.App.Repository}}/internal/entities"
 {{if (eq $.Entity.Name $.Definitions.App.Authentication.Entity)}}
 	"golang.org/x/crypto/bcrypt"
 	"fmt"
@@ -26,7 +27,7 @@ type GetAllParams struct {
 	UserID string `query:"-" bson:"userId,omitempty"`
 {{end}}
 {{range $.Entity.Fields}}
-	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty"`
+	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty" validate:"{{buildValidations .}}"`
 {{end}}
 }
 {{end}}
@@ -39,7 +40,7 @@ type GetOneParams struct {
 {{end}}
 	ID string `bson:"id,omitempty"`
 {{range $.Entity.Fields}}
-	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty"`
+	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty" validate:"{{buildValidations .}}"`
 {{end}}
 }
 {{end}}
@@ -59,7 +60,9 @@ type Service interface {
 	Delete(*entities.{{capitalize $.Entity.Name}}) (bool, error)
 {{end}}
 {{end}}
+{{if or ($.Entity.HasAction "getOne") ($.Entity.HasAction "update")}}
 	GetOne(*GetOneParams) (*entities.{{capitalize $.Entity.Name}}, error)
+{{end}}
 }
 
 type service struct {
@@ -147,10 +150,13 @@ func (s *service) Delete({{$.Entity.Name}} *entities.{{capitalize $.Entity.Name}
 }
 {{end}}
 {{end}}
+
+{{if or ($.Entity.HasAction "getOne") ($.Entity.HasAction "update")}}
 // GetOne - Get one {{$.Entity.Name}} by parameters
 func (s *service) GetOne(params *GetOneParams) (*entities.{{capitalize $.Entity.Name}}, error) {
 	return s.repository.GetOne(params)
 }
+{{end}}
 
 {{if (eq $.Entity.Name $.Definitions.App.Authentication.Entity)}}
 func (s *service) UpdatePassword(params *UpdatePassword) (*entities.{{capitalize $.Entity.Name}}, error) {

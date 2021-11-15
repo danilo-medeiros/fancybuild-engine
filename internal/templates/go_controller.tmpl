@@ -86,6 +86,12 @@ func (c *controller) GetOne(ctx *fiber.Ctx) error {
 {{end}}
 	}
 
+	err := validator.Validate(&params)
+
+	if err != nil {
+		return err
+	}
+
 	result, err := c.service.GetOne(&params)
 
 	if err != nil {
@@ -114,6 +120,12 @@ func (c *controller) GetAll(ctx *fiber.Ctx) error {
 {{if and $.Entity.BelongsToAuthenticatedEntity .Authenticated}}
 	params.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)
 {{end}}
+
+	err = validator.Validate(&params)
+
+	if err != nil {
+		return err
+	}
 
 	result, err := c.service.GetAll(&params)
 
