@@ -50,3 +50,83 @@ func TestPluralize(t *testing.T) {
 		}
 	}
 }
+
+const testSimpleFormatInput = `package test
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+)
+func test(a string, b string) {
+	fmt.Printf(
+		"a: %s, b: %s",
+		a,
+		b,
+	)
+}
+func main() {
+	fmt.Println("Hello World!")
+	for i := 0; i < 10; i++ {
+		fmt.Printf("Hello #%s", count)
+		if i == 5 {
+			fmt.Println("five!")
+			test(
+				"Hello",
+				"Five",
+			)
+		}
+		fmt.Printf("Hello #%s", count)
+	}
+	test(
+		"Hello",
+		"World",
+	)
+}`
+
+const testSimpleFormatExpected = `package test
+
+import (
+	"fmt"
+	"github.com/stretchr/testify/assert"
+)
+
+func test(a string, b string) {
+	fmt.Printf(
+		"a: %s, b: %s",
+		a,
+		b,
+	)
+}
+
+func main() {
+	fmt.Println("Hello World!")
+
+	for i := 0; i < 10; i++ {
+		fmt.Printf("Hello #%s", count)
+
+		if i == 5 {
+			fmt.Println("five!")
+
+			test(
+				"Hello",
+				"Five",
+			)
+		}
+
+		fmt.Printf("Hello #%s", count)
+	}
+
+	test(
+		"Hello",
+		"World",
+	)
+}`
+
+func TestSimpleFormat(t *testing.T) {
+	input := testSimpleFormatInput
+	expected := testSimpleFormatExpected
+	actual := SimpleFormat(input)
+
+	if actual != expected {
+		t.Errorf("SimpleFormat wanted:\n%s\nBut got:\n%s\n", expected, actual)
+	}
+}

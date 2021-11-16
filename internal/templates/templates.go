@@ -122,3 +122,55 @@ func Pluralize(text string) string {
 func Empty(text string) bool {
 	return len(text) == 0
 }
+
+// SimpleFormat - Runs a simple formatting in a string
+func SimpleFormat(text string) string {
+	result := text
+
+	{
+		pattern := regexp.MustCompile("\n+")
+		result = pattern.ReplaceAllString(result, "\n")
+	}
+
+	lines := strings.Split(result, "\n")
+	previousLineHasBreak := false
+
+	//lint:ignore S1007 we want to define a regular expression with a conditional
+	openingBlockPattern := regexp.MustCompile("{$|\\($")
+	closingBlockPattern := regexp.MustCompile("}$|^\t+\\)$|^\\)$")
+	commentPattern := regexp.MustCompile("^\t*//.*")
+
+	for i, line := range lines {
+		isPreviousLineComment := false
+		isPreviousLineOpeningBlock := false
+		isCurrentLineOpeningBlock := openingBlockPattern.MatchString(line)
+
+		if i-1 >= 0 {
+			isPreviousLineOpeningBlock = openingBlockPattern.MatchString(lines[i-1])
+			isPreviousLineComment = commentPattern.MatchString(lines[i-1])
+		}
+
+		if isCurrentLineOpeningBlock && !previousLineHasBreak && !isPreviousLineOpeningBlock && !isPreviousLineComment {
+			lines[i] = fmt.Sprintf("\n%s", line)
+			continue
+		}
+
+		if i+1 >= len(lines) {
+			continue
+		}
+
+		isNextLineClosingBlock := closingBlockPattern.MatchString(lines[i+1])
+		isCurrentLineClosingBlock := closingBlockPattern.MatchString(line)
+
+		if isCurrentLineClosingBlock && !isNextLineClosingBlock {
+			lines[i] = fmt.Sprintf("%s\n", line)
+			previousLineHasBreak = true
+			continue
+		}
+
+		previousLineHasBreak = false
+	}
+
+	result = strings.Join(lines, "\n")
+	return result
+}

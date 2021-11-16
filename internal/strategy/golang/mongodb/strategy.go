@@ -222,7 +222,7 @@ func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 		}
 
 		result := sb.String()
-		file.Result = result
+		file.Result = templates.SimpleFormat(result)
 	}
 
 	return nil
