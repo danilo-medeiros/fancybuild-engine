@@ -1,0 +1,26 @@
+version: "3.9"
+services:
+  web:
+    depends_on:
+      - database
+    build: .
+    ports:
+      - "3000:3000"
+    networks:
+      - {{.App.Name}}_net
+  database:
+    image: mongo:5.0.4
+    restart: always
+    volumes:
+      - {{.App.Name}}_database:/data/db
+    ports:
+      - "27018:27017"
+    networks:
+      - {{.App.Name}}_net
+
+volumes:
+  {{.App.Name}}_database:
+
+networks:
+  {{.App.Name}}_net:
+    driver: bridge

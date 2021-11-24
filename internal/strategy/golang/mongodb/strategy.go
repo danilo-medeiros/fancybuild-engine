@@ -76,6 +76,14 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			FinalPath:    "main_test.go",
 			TemplatePath: "go_main_test.tmpl",
 		},
+		"dockerfile": {
+			FinalPath:    "Dockerfile",
+			TemplatePath: "go_mongodb_dockerfile.tmpl",
+		},
+		"docker-compose": {
+			FinalPath:    "docker-compose.yml",
+			TemplatePath: "go_mongodb_docker-compose.tmpl",
+		},
 	}
 
 	if len(s.Definitions.App.Authentication.Entity) != 0 {
