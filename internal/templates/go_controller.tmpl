@@ -69,11 +69,11 @@ func (c *controller) Create(ctx *fiber.Ctx) error {
 	return ctx.JSON(&entities.SingleResult{
 		Data: {{$outputEntity.Name}},
 	})
-{{end}}
-
+{{else}}
 	return ctx.JSON(&entities.SingleResult{
 		Data: result,
 	})
+{{end}}
 }
 {{end}}
 {{if eq .Type "getOne"}}
@@ -102,9 +102,25 @@ func (c *controller) GetOne(ctx *fiber.Ctx) error {
 		return fiber.ErrNotFound
 	}
 
+{{if (not (empty .Output.Entity))}}
+{{$outputEntity := $.Definitions.FindEntity .Output.Entity}}
+	{{$outputEntity.Name}} := &entities.{{capitalize $outputEntity.Name}}{
+{{range $outputEntity.Fields}}
+		{{capitalize .Name}}: result.{{capitalize .Name}},
+{{end}}
+{{if (and $.Entity.Timestamps $outputEntity.Timestamps)}}
+		Timestamps: result.Timestamps,
+{{end}}
+	}
+
+	return ctx.JSON(&entities.SingleResult{
+		Data: {{$outputEntity.Name}},
+	})
+{{else}}
 	return ctx.JSON(&entities.SingleResult{
 		Data: result,
 	})
+{{end}}
 }
 {{end}}
 {{if eq .Type "getAll"}}
@@ -162,9 +178,25 @@ func (c *controller) Update(ctx *fiber.Ctx) error {
 		return err
 	}
 
+{{if (not (empty .Output.Entity))}}
+{{$outputEntity := $.Definitions.FindEntity .Output.Entity}}
+	{{$outputEntity.Name}} := &entities.{{capitalize $outputEntity.Name}}{
+{{range $outputEntity.Fields}}
+		{{capitalize .Name}}: result.{{capitalize .Name}},
+{{end}}
+{{if (and $.Entity.Timestamps $outputEntity.Timestamps)}}
+		Timestamps: result.Timestamps,
+{{end}}
+	}
+
+	return ctx.JSON(&entities.SingleResult{
+		Data: {{$outputEntity.Name}},
+	})
+{{else}}
 	return ctx.JSON(&entities.SingleResult{
 		Data: result,
 	})
+{{end}}
 }
 {{end}}
 {{if eq .Type "delete"}}

@@ -121,7 +121,10 @@
                         }
                     },
                     {
-                        "type": "update"
+                        "type": "update",
+                        "output": {
+                            "entity": "userInfo"
+                        }
                     }
                 ],
                 "timestamps": true,
