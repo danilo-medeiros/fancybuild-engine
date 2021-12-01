@@ -95,6 +95,10 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			FinalPath:    "internal/auth/handler.go",
 			TemplatePath: "go_auth_handler.tmpl",
 		}
+		fileMap["auth_service"] = &entities.File{
+			FinalPath:    "internal/auth/service.go",
+			TemplatePath: "go_auth_service.tmpl",
+		}
 	}
 
 	for _, file := range fileMap {

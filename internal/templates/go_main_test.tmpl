@@ -28,6 +28,7 @@ type testCase struct {
 	ExpectedError bool
 	ExpectedCode  int
 	ExpectedBody  string
+	Headers       map[string]string
 }
 
 type teardownTests func()
@@ -73,8 +74,8 @@ func TestHealthRoute(t *testing.T) {
 func TestAuthSignInRoute(t *testing.T) {
 	route := "/v1/auth/signin"
 	method := "POST"
-	app, terminate := setup()
-	defer terminate()
+	app, teardown := setupTests()
+	defer teardown()
 
 	invalidUser, err := json.Marshal(map[string]string{
 		"email":    "invalid.user@example.com",
@@ -136,6 +137,43 @@ func TestAuthSignInRoute(t *testing.T) {
 			ExpectedCode:  200,
 			Method:        method,
 			RequestBody:   validUser,
+		},
+	}
+
+	runTestCases(app, t, tests)
+}
+
+func TestAuthSignOutRoute(t *testing.T) {
+	route := "/v1/auth/signout"
+	method := "POST"
+	app, terminate := setupTests()
+	defer terminate()
+
+	tests := []*testCase{
+		{
+			Description:   "without token",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+		},
+		{
+			Description:   "valid token",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  200,
+			Method:        method,
+			Authenticated: true,
+		},
+		{
+			Description:   "invalid token",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+			Headers: map[string]string{
+				"Authorization": "Bearer invalidtoken",
+			},
 		},
 	}
 
@@ -232,6 +270,10 @@ func runTestCases(app *fiber.App, t *testing.T, tests []*testCase) {
 
 		if test.Authenticated {
 			req.Header["Authorization"] = []string{fmt.Sprintf("Bearer %s", token)}
+		}
+
+		for header, value := range test.Headers {
+			req.Header[header] = []string{value}
 		}
 
 		res, err := app.Test(req, -1)

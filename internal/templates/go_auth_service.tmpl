@@ -1,0 +1,83 @@
+package auth
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strconv"
+	"time"
+
+	"{{.App.Repository}}/internal/entities"
+	"github.com/go-redis/redis/v8"
+	"github.com/golang-jwt/jwt"
+)
+
+var ctx = context.Background()
+
+type Service interface {
+	SignIn(user *entities.User) (string, error)
+	SignOut(token string) error
+	IsSignedOut(token string) (bool, error)
+}
+
+type service struct {
+	redisClient *redis.Client
+}
+
+func (s *service) SignIn(user *entities.User) (string, error) {
+	tokenDuration, err := strconv.Atoi(os.Getenv("TOKEN_DURATION"))
+
+	if err != nil {
+		return "", err
+	}
+
+	expirationDate := time.Now().Add(time.Second * time.Duration(tokenDuration))
+
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"email":  user.Email,
+		"userId": user.ID,
+		"exp":    expirationDate.Unix(),
+	})
+
+	secret := []byte(os.Getenv("TOKEN_SECRET"))
+	tokenString, err := token.SignedString(secret)
+
+	if err != nil {
+		return "", fmt.Errorf("generating jwt token: %s", err.Error())
+	}
+
+	return tokenString, nil
+}
+
+func (s *service) SignOut(token string) error {
+	tokenDuration, err := strconv.Atoi(os.Getenv("TOKEN_DURATION"))
+
+	if err != nil {
+		return err
+	}
+
+	ttl := time.Duration(tokenDuration) * time.Second
+	err = s.redisClient.Set(ctx, tokenKey(token), "blacklist", ttl).Err()
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *service) IsSignedOut(token string) (bool, error) {
+	val, _ := s.redisClient.Get(ctx, tokenKey(token)).Result()
+
+	return val == "blacklist", nil
+}
+
+func tokenKey(token string) string {
+	return fmt.Sprintf("auth:token:%s", token)
+}
+
+func NewService(redisClient *redis.Client) Service {
+	return &service{
+		redisClient: redisClient,
+	}
+}

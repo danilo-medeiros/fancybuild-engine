@@ -3,6 +3,8 @@ package router
 import (
 {{if .HasAuthentication}}
 	"{{.App.Repository}}/internal/auth"
+	"github.com/go-redis/redis/v8"
+	"os"
 {{end}}
 	"{{.App.Repository}}/internal/health"
 {{range .App.Entities}}
@@ -16,6 +18,7 @@ import (
 
 func Router(app *fiber.App, client *mongo.Client) {
 	hc := health.NewController()
+
 {{range .App.Entities}}
 {{if .HasController}}
 {{if (eq .Name $.App.Authentication.Entity)}}
@@ -40,6 +43,18 @@ func Router(app *fiber.App, client *mongo.Client) {
 	)
 {{end}}
 {{end}}
+
+{{if .HasAuthentication}}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_URL"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	})
+
+	authService := auth.NewService(redisClient)
+	authHandler := auth.NewHandler(authService)
+{{end}}
+
 	app.Get("/health", hc.Get)
 	v1 := app.Group("/v1")
 {{range .App.Entities}}
@@ -48,34 +63,34 @@ func Router(app *fiber.App, client *mongo.Client) {
     {{$group}} := v1.Group("/{{pluralize .Name}}")
 {{$isAuthenticatedEntity := .IsAuthenticated}}
 {{if $isAuthenticatedEntity}}
-	{{$group}}.Use(auth.Handler)
+	{{$group}}.Use(authHandler)
 {{end}}
 {{range .Actions}}
 {{if eq .Type "create"}}
 {{if (and .Authenticated (not $isAuthenticatedEntity))}}
-	{{$group}}.Post("/", auth.Handler, {{$controller}}.Create)
+	{{$group}}.Post("/", authHandler, {{$controller}}.Create)
 {{else}}
     {{$group}}.Post("/", {{$controller}}.Create)
 {{end}}
 {{end}}
 {{if eq .Type "getOne"}}
 {{if (and .Authenticated (not $isAuthenticatedEntity))}}
-	{{$group}}.Get("/:id", auth.Handler, {{$controller}}.GetOne)
+	{{$group}}.Get("/:id", authHandler, {{$controller}}.GetOne)
 {{else}}
     {{$group}}.Get("/:id", {{$controller}}.GetOne)
 {{end}}
 {{end}}
 {{if eq .Type "getAll"}}
 {{if (and .Authenticated (not $isAuthenticatedEntity))}}
-	{{$group}}.Get("/", auth.Handler, {{$controller}}.GetAll)
+	{{$group}}.Get("/", authHandler, {{$controller}}.GetAll)
 {{else}}
     {{$group}}.Get("/", {{$controller}}.GetAll)
 {{end}}
 {{end}}
 {{if eq .Type "update"}}
 {{if (and .Authenticated (not $isAuthenticatedEntity))}}
-	{{$group}}.Put("/:id", auth.Handler, {{$controller}}.Update)
-    {{$group}}.Patch("/:id", auth.Handler, {{$controller}}.Update)
+	{{$group}}.Put("/:id", authHandler, {{$controller}}.Update)
+    {{$group}}.Patch("/:id", authHandler, {{$controller}}.Update)
 {{else}}
 	{{$group}}.Put("/:id", {{$controller}}.Update)
     {{$group}}.Patch("/:id", {{$controller}}.Update)
@@ -83,7 +98,7 @@ func Router(app *fiber.App, client *mongo.Client) {
 {{end}}
 {{if eq .Type "delete"}}
 {{if (and .Authenticated (not $isAuthenticatedEntity))}}
-	{{$group}}.Delete("/:id", auth.Handler, {{$controller}}.Delete)
+	{{$group}}.Delete("/:id", authHandler, {{$controller}}.Delete)
 {{else}}
     {{$group}}.Delete("/:id", {{$controller}}.Delete)
 {{end}}
@@ -93,13 +108,14 @@ func Router(app *fiber.App, client *mongo.Client) {
 {{end}}
 
 {{if .HasAuthentication}}
-	authService := auth.NewController(
+	authController := auth.NewController(
 		{{.App.Authentication.Entity}}Service,
+		authService,
 	)
 
 	authGrp := v1.Group("/auth")
-	authGrp.Post("/signin", authService.SignIn)
-	authGrp.Post("/signout", authService.SignOut)
-	authGrp.Get("/me", authService.Me)
+	authGrp.Post("/signin", authController.SignIn)
+	authGrp.Post("/signout", authHandler, authController.SignOut)
+	authGrp.Get("/me", authHandler, authController.Me)
 {{end}}
 }
