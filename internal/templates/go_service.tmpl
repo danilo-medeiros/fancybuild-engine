@@ -23,8 +23,12 @@ type UpdatePassword struct {
 {{if .Entity.HasAction "getAll"}}
 type GetAllParams struct {
 	entities.Pagination `query:",inline" bson:"-"`
-{{if $.Entity.BelongsToAuthenticatedEntity}}
-	UserID string `query:"-" bson:"userId,omitempty"`
+{{range .Entity.BelongsTo}}
+{{if .IsUsedForAuthentication}}
+	{{capitalize .Name}}ID string `query:"-" bson:"{{.Name}}Id,omitempty"`
+{{else}}
+	{{capitalize .Name}}ID string `query:"{{.Name}}Id" bson:"{{.Name}}Id,omitempty"`
+{{end}}
 {{end}}
 {{range $.Entity.Fields}}
 	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty" validate:"{{buildValidations .}}"`

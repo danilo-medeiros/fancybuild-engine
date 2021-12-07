@@ -11,6 +11,53 @@
         },
         "entities": [
             {
+                "name": "category",
+                "fields": [
+                    {
+                        "name": "name",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            },
+                            {
+                                "name": "max",
+                                "value": "100"
+                            }
+                        ]
+                    },
+                    {
+                        "name": "description",
+                        "type": "string",
+                        "validations": [
+                            {
+                                "name": "required",
+                                "value": "true"
+                            },
+                            {
+                                "name": "min",
+                                "value": "3"
+                            },
+                            {
+                                "name": "max",
+                                "value": "500"
+                            }
+                        ]
+                    }
+                ],
+                "timestamps": true,
+                "actions": [
+                    {
+                        "type": "getOne"
+                    },
+                    {
+                        "type": "getAll"
+                    }
+                ],
+                "persisted": true
+            },
+            {
                 "name": "product",
                 "fields": [
                     {
@@ -56,6 +103,15 @@
                             {
                                 "name": "required",
                                 "value": "true"
+                            }
+                        ]
+                    }
+                ],
+                "indexes": [
+                    {
+                        "fields": [
+                            {
+                                "name": "categoryId"
                             }
                         ]
                     }
@@ -151,7 +207,8 @@
                 "persisted": true,
                 "actions": [
                     {
-                        "type": "create"
+                        "type": "create",
+                        "authenticated": true
                     }
                 ]
             }
@@ -160,13 +217,20 @@
             {
                 "item1": "user",
                 "item2": "sale",
-                "type": "privateHasMany"
+                "type": "hasMany",
+                "visibility": "private"
             },
             {
-                "item1": "sale",
+                "item1": "product",
+                "item2": "sale",
+                "type": "hasMany",
+                "nested": false
+            },
+            {
+                "item1": "category",
                 "item2": "product",
                 "type": "hasMany",
-                "nested": true
+                "nested": false
             }
         ],
         "authentication": {

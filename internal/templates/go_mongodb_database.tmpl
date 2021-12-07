@@ -33,9 +33,10 @@ func getRef(val bool) *bool {
 func (d *database) createIndexes() error {
 	// Define here the indexes of your database
 {{if .HasIndexes}}
-	_, err := d.Client.Database(d.Name).Collection("users").Indexes().CreateMany(
-		d.Ctx,
 {{range .App.Entities}}
+{{if .HasIndexes}}
+	_, err := d.Client.Database(d.Name).Collection("{{pluralize .Name}}").Indexes().CreateMany(
+		d.Ctx,
 {{range .Indexes}}
 		[]mongo.IndexModel{
 			{
@@ -50,8 +51,9 @@ func (d *database) createIndexes() error {
 			},
 		},
 {{end}}
-{{end}}
 	)
+{{end}}
+{{end}}
 
 	return err
 {{else}}

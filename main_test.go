@@ -13,14 +13,8 @@ import (
 	"github.com/danilo-medeiros/fancybuild/engine/internal/strategy"
 )
 
-func TestExamples(t *testing.T) {
-	files := []string{
-		"blog.json",
-		"todoapp.json",
-		"ecommerce.json",
-	}
-
-	for _, file := range files {
+func subTest(file string) func(t *testing.T) {
+	return func(t *testing.T) {
 		data, err := os.ReadFile(fmt.Sprintf("./examples/%s", file))
 
 		if err != nil {
@@ -45,7 +39,6 @@ func TestExamples(t *testing.T) {
 				for _, fieldErr := range validationErr.Errors {
 					panic(fmt.Sprintf("validation error on: %s %s %s", fieldErr.Field, fieldErr.Tag, fieldErr.Value))
 				}
-				return
 			}
 		}
 
@@ -62,5 +55,17 @@ func TestExamples(t *testing.T) {
 		if err != nil {
 			panic(fmt.Sprintf("error on building project: %s", err))
 		}
+	}
+}
+
+func TestExamples(t *testing.T) {
+	files := []string{
+		"blog.json",
+		"todoapp.json",
+		"ecommerce.json",
+	}
+
+	for _, file := range files {
+		t.Run(file, subTest(file))
 	}
 }

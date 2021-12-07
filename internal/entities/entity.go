@@ -42,8 +42,8 @@ func (e Entity) HasAction(action string) bool {
 }
 
 func (e Entity) BelongsToAuthenticatedEntity() bool {
-	for _, r := range e.Definitions.App.Relationships {
-		if r.Item2 == e.Name && r.Type == "privateHasMany" {
+	for _, owner := range e.BelongsTo() {
+		if owner.IsUsedForAuthentication() {
 			return true
 		}
 	}
@@ -59,12 +59,41 @@ func (e Entity) IsAuthenticated() bool {
 	return true
 }
 
-func (e Entity) GetNestedEntities() []*Entity {
+func (e Entity) HasMany() []*Entity {
 	result := make([]*Entity, 0)
+
 	for _, rel := range e.Definitions.App.Relationships {
-		if rel.Item1 == e.Name && rel.Nested && rel.Type == "hasMany" {
+		if rel.Item1 == e.Name && rel.IsTypeHasMany() {
 			result = append(result, e.Definitions.FindEntity(rel.Item2))
 		}
 	}
+
 	return result
+}
+
+func (e Entity) IsNestedIn(entity *Entity) bool {
+	for _, rel := range e.Definitions.App.Relationships {
+		if rel.Item1 == entity.Name && rel.Item2 == e.Name && rel.Nested && rel.IsTypeHasMany() {
+			return true
+		}
+	}
+	return false
+}
+
+func (e Entity) BelongsTo() []*Entity {
+	result := make([]*Entity, 0)
+	for _, rel := range e.Definitions.App.Relationships {
+		if rel.Item2 == e.Name && !rel.Nested {
+			result = append(result, e.Definitions.FindEntity(rel.Item1))
+		}
+	}
+	return result
+}
+
+func (e Entity) IsUsedForAuthentication() bool {
+	return e.Name == e.Definitions.AuthEntity().Name
+}
+
+func (e Entity) HasIndexes() bool {
+	return len(e.Indexes) > 0
 }

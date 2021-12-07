@@ -30,7 +30,7 @@ func (d Definitions) FindEntity(entity string) *Entity {
 
 func (d Definitions) HasIndexes() bool {
 	for _, e := range d.App.Entities {
-		if len(e.Indexes) > 0 {
+		if e.HasIndexes() {
 			return true
 		}
 	}
