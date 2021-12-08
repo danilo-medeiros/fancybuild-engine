@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 	"testing"
-	"time"
 
 	"github.com/danilo-medeiros/fancybuild/engine/pkg/builder"
 	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
@@ -31,7 +30,7 @@ func subTest(file string) func(t *testing.T) {
 			panic(fmt.Sprintf("error on parsing definition: %s", err))
 		}
 
-		definition.Id = fmt.Sprintf("%v", time.Now().Unix())
+		definition.Id = fmt.Sprintf("%v", file)
 		validationErrs := r.Validate(&definition)
 
 		if validationErrs != nil {

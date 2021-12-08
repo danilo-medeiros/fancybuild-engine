@@ -5,36 +5,10 @@ import (
 	"log"
 	"os"
 
-	"{{.App.Repository}}/internal/database"
-	"{{.App.Repository}}/internal/errors"
-	"{{.App.Repository}}/internal/router"
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/logger"
-	"github.com/gofiber/fiber/v2/middleware/recover"
+	"{{.App.Repository}}/internal/app"
+
 	"github.com/joho/godotenv"
 )
-
-type Terminate func()
-
-func setup() (*fiber.App, Terminate) {
-	db := database.New(os.Getenv("DB_URL"), os.Getenv("DB_NAME"))
-	client := db.Connect()
-
-	app := fiber.New(fiber.Config{
-		ErrorHandler:          errors.Handler,
-		DisableStartupMessage: true,
-		AppName:               "{{.App.Name}}",
-	})
-
-	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
-	app.Use(logger.New())
-
-	router.Router(app, client)
-
-	return app, func() {
-		db.Disconnect()
-	}
-}
 
 func main() {
 	err := godotenv.Load()
@@ -43,9 +17,8 @@ func main() {
 		panic(err)
 	}
 
-	app, terminate := setup()
+	app, terminate := app.Setup()
 	defer terminate()
-
 	log.Printf("listening on port %s\n", os.Getenv("PORT"))
 	err = app.Listen(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
 

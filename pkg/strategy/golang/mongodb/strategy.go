@@ -24,6 +24,10 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			FinalPath:    "main.go",
 			TemplatePath: "go/main.tmpl",
 		},
+		"app": {
+			FinalPath:    "internal/app/app.go",
+			TemplatePath: "go/app.tmpl",
+		},
 		"validator": {
 			FinalPath:    "internal/validator/validator.go",
 			TemplatePath: "go/validator.tmpl",
@@ -65,8 +69,12 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			TemplatePath: "go/readme.tmpl",
 		},
 		"main_test": {
-			FinalPath:    "main/test.go",
+			FinalPath:    "test/main_test.go",
 			TemplatePath: "go/main_test.tmpl",
+		},
+		"test_utils": {
+			FinalPath:    "test/utils/utils.go",
+			TemplatePath: "go/test_utils.tmpl",
 		},
 		"dockerfile": {
 			FinalPath:    "Dockerfile",
@@ -78,7 +86,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		},
 	}
 
-	if len(s.Definitions.App.Authentication.Entity) != 0 {
+	if s.Definitions.HasAuthentication() {
 		fileMap["auth_controller"] = &entities.File{
 			FinalPath:    "internal/auth/controller.go",
 			TemplatePath: "go/auth_controller.tmpl",
@@ -90,6 +98,10 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		fileMap["auth_service"] = &entities.File{
 			FinalPath:    "internal/auth/service.go",
 			TemplatePath: "go/auth_service.tmpl",
+		}
+		fileMap["auth_test"] = &entities.File{
+			FinalPath:    "test/auth/auth_test.go",
+			TemplatePath: "go/auth_test.tmpl",
 		}
 	}
 

@@ -1,0 +1,132 @@
+package auth_test
+
+import (
+	"encoding/json"
+	"os"
+	"testing"
+
+	"{{.App.Repository}}/test/utils"
+	"github.com/joho/godotenv"
+	"github.com/stretchr/testify/assert"
+)
+
+func TestMain(m *testing.M) {
+	err := godotenv.Load("../../.env.test")
+
+	if err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
+
+func TestAuthSignInRoute(t *testing.T) {
+	route := "/v1/auth/signin"
+	method := "POST"
+	app, teardown := utils.SetupTests()
+	defer teardown()
+
+	invalidUser, err := json.Marshal(map[string]string{
+		"email":    "invalid.user@example.com",
+		"password": "12345678",
+	})
+	assert.Equalf(t, nil, err, "parsing body")
+
+	invalidBody, err := json.Marshal(map[string]string{
+		"email":    "...",
+		"password": "...",
+	})
+	assert.Equalf(t, nil, err, "parsing body")
+
+	validUser, err := json.Marshal(map[string]string{
+		"email":    "valid.user@example.com",
+		"password": "87654321",
+	})
+	assert.Equalf(t, nil, err, "parsing body")
+
+	validUserWithWrongPassword, err := json.Marshal(map[string]string{
+		"email":    "valid.user@example.com",
+		"password": "wrongpass",
+	})
+	assert.Equalf(t, nil, err, "parsing body")
+
+	tests := []*utils.TestCase{
+		{
+			Description:   "invalid body",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  406,
+			Method:        method,
+			RequestBody:   invalidBody,
+		},
+
+		{
+			Description:   "invalid user",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+			RequestBody:   invalidUser,
+		},
+
+		{
+			Description:   "wrong password",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+			RequestBody:   validUserWithWrongPassword,
+		},
+
+		{
+			Description:   "valid user",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  200,
+			Method:        method,
+			RequestBody:   validUser,
+		},
+	}
+
+	utils.RunTestCases(app, t, tests)
+}
+
+func TestAuthSignOutRoute(t *testing.T) {
+	route := "/v1/auth/signout"
+	method := "POST"
+	app, terminate := utils.SetupTests()
+	defer terminate()
+
+	tests := []*utils.TestCase{
+		{
+			Description:   "without token",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+		},
+
+		{
+			Description:   "valid token",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  200,
+			Method:        method,
+			Authenticated: true,
+		},
+
+		{
+			Description:   "invalid token",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+
+			Headers: map[string]string{
+				"Authorization": "Bearer invalidtoken",
+			},
+		},
+	}
+
+	utils.RunTestCases(app, t, tests)
+}
