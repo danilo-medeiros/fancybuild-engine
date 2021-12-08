@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/danilo-medeiros/fancybuild/engine/internal/builder"
-	"github.com/danilo-medeiros/fancybuild/engine/internal/strategy"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/builder"
 	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
 	"github.com/danilo-medeiros/fancybuild/engine/pkg/reader"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/strategy"
 )
 
 const OutputFolder = "/home/danilo/development/personal/generated-projects"
