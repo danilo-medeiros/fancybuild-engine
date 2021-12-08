@@ -1,8 +1,8 @@
 package strategy
 
 import (
-	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/strategy/golang"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
 )
 
 const (

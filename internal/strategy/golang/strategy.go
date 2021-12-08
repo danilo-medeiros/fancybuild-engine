@@ -1,8 +1,8 @@
 package golang
 
 import (
-	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/strategy/golang/mongodb"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
 )
 
 const (

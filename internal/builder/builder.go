@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
 )
 
 type Builder interface {

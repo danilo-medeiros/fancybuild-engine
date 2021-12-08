@@ -9,8 +9,8 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/templates"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
 )
 
 type strategy struct {

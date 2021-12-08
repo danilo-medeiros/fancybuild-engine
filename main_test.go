@@ -1,4 +1,4 @@
-package main
+package engine
 
 import (
 	"fmt"
@@ -8,10 +8,12 @@ import (
 	"time"
 
 	"github.com/danilo-medeiros/fancybuild/engine/internal/builder"
-	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
-	"github.com/danilo-medeiros/fancybuild/engine/internal/reader"
 	"github.com/danilo-medeiros/fancybuild/engine/internal/strategy"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/reader"
 )
+
+const OutputFolder = "/home/danilo/development/personal/generated-projects"
 
 func subTest(file string) func(t *testing.T) {
 	return func(t *testing.T) {

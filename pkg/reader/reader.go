@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/danilo-medeiros/fancybuild/engine/internal/entities"
+	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
 	"github.com/go-playground/validator/v10"
 )
 
