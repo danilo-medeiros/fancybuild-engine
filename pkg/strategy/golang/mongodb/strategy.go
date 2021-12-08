@@ -30,74 +30,74 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 	fileMap := map[string]*entities.File{
 		"main": {
 			FinalPath:    "main.go",
-			TemplatePath: "go_main.tmpl",
+			TemplatePath: "go/main.tmpl",
 		},
 		"validator": {
 			FinalPath:    "internal/validator/validator.go",
-			TemplatePath: "go_validator.tmpl",
+			TemplatePath: "go/validator.tmpl",
 		},
 		"router": {
 			FinalPath:    "internal/router/router.go",
-			TemplatePath: "go_mongodb_router.tmpl",
+			TemplatePath: "go/mongodb/router.tmpl",
 		},
 		"entities": {
 			FinalPath:    "internal/entities/entities.go",
-			TemplatePath: "go_mongodb_entities.tmpl",
+			TemplatePath: "go/mongodb/entities.tmpl",
 		},
 		"health": {
 			FinalPath:    "internal/health/controller.go",
-			TemplatePath: "go_mongodb_health.tmpl",
+			TemplatePath: "go/mongodb/health.tmpl",
 		},
 		"database": {
 			FinalPath:    "internal/database/database.go",
-			TemplatePath: "go_mongodb_database.tmpl",
+			TemplatePath: "go/mongodb/database.tmpl",
 		},
 		"error_handler": {
 			FinalPath:    "internal/errors/handler.go",
-			TemplatePath: "go_error_handler.tmpl",
+			TemplatePath: "go/error_handler.tmpl",
 		},
 		"gitignore": {
 			FinalPath:    ".gitignore",
-			TemplatePath: "go_gitignore.tmpl",
+			TemplatePath: "go/gitignore.tmpl",
 		},
 		"env": {
 			FinalPath:    ".env",
-			TemplatePath: "go_mongodb_env.tmpl",
+			TemplatePath: "go/mongodb/env.tmpl",
 		},
 		"env_test": {
 			FinalPath:    ".env.test",
-			TemplatePath: "go_mongodb_env_test.tmpl",
+			TemplatePath: "go/mongodb/env_test.tmpl",
 		},
 		"readme": {
 			FinalPath:    "README.md",
-			TemplatePath: "go_readme.tmpl",
+			TemplatePath: "go/readme.tmpl",
 		},
 		"main_test": {
-			FinalPath:    "main_test.go",
-			TemplatePath: "go_main_test.tmpl",
+			FinalPath:    "main/test.go",
+			TemplatePath: "go/main_test.tmpl",
 		},
 		"dockerfile": {
 			FinalPath:    "Dockerfile",
-			TemplatePath: "go_mongodb_dockerfile.tmpl",
+			TemplatePath: "go/mongodb/dockerfile.tmpl",
 		},
 		"docker-compose": {
 			FinalPath:    "docker-compose.yml",
-			TemplatePath: "go_mongodb_docker-compose.tmpl",
+			TemplatePath: "go/mongodb/docker-compose.tmpl",
 		},
 	}
 
 	if len(s.Definitions.App.Authentication.Entity) != 0 {
 		fileMap["auth_controller"] = &entities.File{
 			FinalPath:    "internal/auth/controller.go",
-			TemplatePath: "go_auth_controller.tmpl",
+			TemplatePath: "go/auth_controller.tmpl",
 		}
 		fileMap["auth_handler"] = &entities.File{
 			FinalPath:    "internal/auth/handler.go",
-			TemplatePath: "go_auth_handler.tmpl",
+			TemplatePath: "go/auth_handler.tmpl",
 		}
 		fileMap["auth_service"] = &entities.File{
 			FinalPath:    "internal/auth/service.go",
-			TemplatePath: "go_auth_service.tmpl",
+			TemplatePath: "go/auth_service.tmpl",
 		}
 	}
 
@@ -117,7 +117,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		if entity.HasController() {
 			fileMap[fmt.Sprintf("%s_controller", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/controller.go", entity.Name),
-				TemplatePath: "go_controller.tmpl",
+				TemplatePath: "go/controller.tmpl",
 				Data:         data,
 			}
 		}
@@ -125,7 +125,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		if entity.HasService() {
 			fileMap[fmt.Sprintf("%s_service", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/service.go", entity.Name),
-				TemplatePath: "go_service.tmpl",
+				TemplatePath: "go/service.tmpl",
 				Data:         data,
 			}
 		}
@@ -133,14 +133,14 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		if entity.HasRepository() {
 			fileMap[fmt.Sprintf("%s_repository", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("internal/%s/repository.go", entity.Name),
-				TemplatePath: "go_mongodb_repository.tmpl",
+				TemplatePath: "go/mongodb/repository.tmpl",
 				Data:         data,
 			}
 		}
 
 		fileMap[fmt.Sprintf("%s_entity", entity.Name)] = &entities.File{
 			FinalPath:    fmt.Sprintf("internal/entities/%s.go", entity.Name),
-			TemplatePath: "go_mongodb_entity.tmpl",
+			TemplatePath: "go/mongodb/entity.tmpl",
 			Data:         data,
 		}
 	}
