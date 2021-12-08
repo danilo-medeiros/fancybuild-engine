@@ -211,6 +211,34 @@
                         "authenticated": true
                     }
                 ]
+            },
+            {
+                "name": "payment",
+                "fields": [
+                    {
+                        "name": "method",
+                        "type": "string"
+                    },
+                    {
+                        "name": "amount",
+                        "type": "float64"
+                    },
+                    {
+                        "name": "invoiceNo",
+                        "type": "string"
+                    },
+                    {
+                        "name": "status",
+                        "type": "string"
+                    }
+                ],
+                "timestamps": true,
+                "persisted": true,
+                "actions": [
+                    {
+                        "type": "create"
+                    }
+                ]
             }
         ],
         "relationships": [
@@ -230,6 +258,12 @@
                 "item1": "category",
                 "item2": "product",
                 "type": "hasMany",
+                "nested": false
+            },
+            {
+                "item1": "sale",
+                "item2": "payment",
+                "type": "hasOne",
                 "nested": false
             }
         ],

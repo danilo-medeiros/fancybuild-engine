@@ -146,7 +146,7 @@
             {
                 "item1": "user",
                 "item2": "post",
-                "type": "privateHasMany"
+                "type": "hasMany"
             }
         ],
         "authentication": {

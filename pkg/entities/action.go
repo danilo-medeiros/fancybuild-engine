@@ -5,7 +5,7 @@ type Action struct {
 	Authenticated bool    `json:"authenticated"`
 	Input         Input   `json:"input"`
 	Output        Output  `json:"output"`
-	Entity        *Entity `json:"-"`
+	Entity        *Entity `json:"-" validate:"-"`
 }
 
 func (a Action) IsCreate() bool {

@@ -4,11 +4,16 @@ package entities
 type {{capitalize .Entity.Name}} struct {
 	ID    string  `json:"id" bson:"id"`
 {{range .Entity.Fields}}
-	{{capitalize .Name}} {{.Type}} `json:"{{.Name}}" bson:"{{.Name}}" validate:"{{buildValidations .}}"`
+	{{capitalize .Name}} {{.Type}} `json:"{{.Name}}" bson:"{{.Name}}" {{buildValidations .}}`
 {{end}}
 {{range .Entity.HasMany}}
 {{if .IsNestedIn $.Entity}}
 	{{pluralize (capitalize .Name)}} []*{{capitalize .Name}} `json:"{{pluralize .Name}}" bson:"{{pluralize .Name}}" validate:"dive"`
+{{end}}
+{{end}}
+{{range .Entity.HasOne}}
+{{if .IsNestedIn $.Entity}}
+	{{capitalize .Name}} *{{capitalize .Name}} `json:"{{.Name}}" bson:"{{.Name}}" validate:"dive"`
 {{end}}
 {{end}}
 {{range .Entity.BelongsTo}}

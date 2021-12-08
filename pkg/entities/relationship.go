@@ -6,9 +6,9 @@ const (
 )
 
 type Relationship struct {
-	Item1      string `json:"item1"`
-	Item2      string `json:"item2"`
-	Type       string `json:"type"`
+	Item1      string `json:"item1" validate:"required"`
+	Item2      string `json:"item2" validate:"required"`
+	Type       string `json:"type" validate:"oneof=hasMany hasOne,required"`
 	Nested     bool   `json:"nested"`
 	Visibility string `json:"visibility"`
 }

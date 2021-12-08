@@ -10,13 +10,13 @@ type Entity struct {
 	Actions     []*Action    `json:"actions"`
 	Persisted   bool         `json:"persisted"`
 	Indexes     []*Index     `json:"indexes"`
-	Definitions *Definitions `json:"-"`
+	Definitions *Definitions `json:"-" validate:"-"`
 }
 
 // Check if the entity is nested to another
 func (e Entity) IsNested() bool {
 	for _, r := range e.Definitions.App.Relationships {
-		if r.Item2 == e.Name && r.Type == "hasMany" && r.Nested {
+		if r.Item2 == e.Name && r.Nested {
 			return true
 		}
 	}
@@ -82,22 +82,35 @@ func (e Entity) HasMany() []*Entity {
 	return result
 }
 
+// Returns all the entities to which this entity has a "hasOne" relationship.
+func (e Entity) HasOne() []*Entity {
+	result := make([]*Entity, 0)
+
+	for _, rel := range e.Definitions.App.Relationships {
+		if rel.Item1 == e.Name && rel.IsTypeHasOne() {
+			result = append(result, e.Definitions.FindEntity(rel.Item2))
+		}
+	}
+
+	return result
+}
+
 // Checks if has a nested relationship to the nested entity.
 // Used for mongodb cases
 func (e Entity) IsNestedIn(entity *Entity) bool {
 	for _, rel := range e.Definitions.App.Relationships {
-		if rel.Item1 == entity.Name && rel.Item2 == e.Name && rel.Nested && rel.IsTypeHasMany() {
+		if rel.Item1 == entity.Name && rel.Item2 == e.Name && rel.Nested {
 			return true
 		}
 	}
 	return false
 }
 
-// Returns all the entities that belongs to this entity (have a hasMany relationship with it)
+// Returns all the entities that belongs to this entity (have any kind relationship with it and is not nested)
 func (e Entity) BelongsTo() []*Entity {
 	result := make([]*Entity, 0)
 	for _, rel := range e.Definitions.App.Relationships {
-		if rel.Item2 == e.Name && !rel.Nested && rel.IsTypeHasMany() {
+		if rel.Item2 == e.Name && !rel.Nested {
 			result = append(result, e.Definitions.FindEntity(rel.Item1))
 		}
 	}

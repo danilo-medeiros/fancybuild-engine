@@ -19,14 +19,6 @@ type strategy struct {
 }
 
 func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
-	for _, entity := range s.Definitions.App.Entities {
-		entity.Definitions = s.Definitions
-
-		for _, action := range entity.Actions {
-			action.Entity = entity
-		}
-	}
-
 	fileMap := map[string]*entities.File{
 		"main": {
 			FinalPath:    "main.go",
@@ -254,7 +246,13 @@ func buildValidations(field entities.Field) string {
 		}
 	}
 
-	return strings.Join(validations, ",")
+	result := strings.Join(validations, ",")
+
+	if result == "" {
+		return ""
+	} else {
+		return fmt.Sprintf("validate:\"%s\"", result)
+	}
 }
 
 func mapSort(sort string) int {

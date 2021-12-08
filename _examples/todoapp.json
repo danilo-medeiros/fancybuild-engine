@@ -164,7 +164,7 @@
             {
                 "item1": "user",
                 "item2": "project",
-                "type": "privateHasMany"
+                "type": "hasMany"
             }
         ],
         "authentication": {
