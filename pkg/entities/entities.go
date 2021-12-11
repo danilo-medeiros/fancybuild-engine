@@ -1,8 +1,33 @@
 package entities
 
-// Single validation specification for a field. E.g. required, max, min
+// Single validation specification for a field.
+// Available validations:
+//
+// * required
+//
+// * min - Minimum length
+//
+// * max - Maximum length
+//
+// * email
+//
+// * oneof - One of
+//
+// * len - Length
+//
+// * eq - Equals
+//
+// * gt - Greater than
+//
+// * gte - Greater than or equal
+//
+// * lt - Less Than
+//
+// * lte - Less Than or Equal
+//
+// * ne	- Not Equal
 type Validation struct {
-	Name  string `json:"name"`
+	Name  string `json:"name" validation:"oneof=required min max email oneof len eq gt gte lt lte ne"`
 	Value string `json:"value"`
 }
 

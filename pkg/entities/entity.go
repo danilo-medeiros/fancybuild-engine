@@ -5,7 +5,7 @@ package entities
 type Entity struct {
 	Name        string       `json:"name"`
 	Description string       `json:"description"`
-	Fields      []Field      `json:"fields"`
+	Fields      []*Field     `json:"fields"`
 	Timestamps  bool         `json:"timestamps"`
 	Actions     []*Action    `json:"actions"`
 	Persisted   bool         `json:"persisted"`
@@ -125,4 +125,17 @@ func (e Entity) IsUsedForAuthentication() bool {
 // Checks if has defined indexes
 func (e Entity) HasIndexes() bool {
 	return len(e.Indexes) > 0
+}
+
+// Generates an map with example values for this entity.
+// The key is the field (in lowercase) and the value is
+// an example value generated within the validation constratins
+func (e Entity) Example() map[string]string {
+	result := make(map[string]string)
+
+	for _, field := range e.Fields {
+		result[field.Name] = field.Example()
+	}
+
+	return result
 }
