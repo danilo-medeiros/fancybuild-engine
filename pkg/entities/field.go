@@ -104,12 +104,14 @@ func (f Field) Example() string {
 		return fmt.Sprintf("%v", value)
 	}
 
+	size := rand.Intn(max-min) + min
+
 	for {
-		if len(result) == min {
+		if len(result) == size {
 			break
 		}
 
-		result += "a"
+		result += string("abcdefghijklmnopqrstuvwxyz"[rand.Intn(26)])
 	}
 
 	return result

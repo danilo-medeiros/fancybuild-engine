@@ -1,0 +1,5 @@
+json.Marshal(map[string]interface{}{
+{{range .Fields}}
+    "{{.Name}}": {{jsonMarshalField .}},
+{{end}}
+})

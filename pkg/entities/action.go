@@ -1,5 +1,11 @@
 package entities
 
+import (
+	"fmt"
+
+	"github.com/danilo-medeiros/fancybuild/engine/internal/templates"
+)
+
 type Action struct {
 	Type          string  `json:"type"`
 	Authenticated bool    `json:"authenticated"`
@@ -26,6 +32,10 @@ func (a Action) IsUpdate() bool {
 
 func (a Action) IsDelete() bool {
 	return a.Type == "delete"
+}
+
+func (a Action) Endpoint() string {
+	return fmt.Sprintf("/v1/%s", templates.Pluralize(a.Entity.Name))
 }
 
 func (a Action) HTTPMethod() string {

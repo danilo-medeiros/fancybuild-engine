@@ -153,8 +153,7 @@
                         "type": "string",
                         "validations": [
                             {
-                                "name": "type",
-                                "value": "email"
+                                "name": "email"
                             }
                         ]
                     },

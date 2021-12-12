@@ -3,11 +3,8 @@ package mongodb
 import (
 	"bytes"
 	"fmt"
-	"os"
 	"os/exec"
 	"regexp"
-	"strings"
-	"text/template"
 
 	"github.com/danilo-medeiros/fancybuild/engine/internal/templates"
 	"github.com/danilo-medeiros/fancybuild/engine/pkg/entities"
@@ -124,6 +121,15 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 				TemplatePath: "go/controller.tmpl",
 				Data:         data,
 			}
+
+			// TODO: remove this later, currently we only have test coverage for create action
+			if entity.HasAction("create") {
+				fileMap[fmt.Sprintf("%s_controller_test", entity.Name)] = &entities.File{
+					FinalPath:    fmt.Sprintf("test/%s/controller_test.go", entity.Name),
+					TemplatePath: "go/controller_test.tmpl",
+					Data:         data,
+				}
+			}
 		}
 
 		if entity.HasService() {
@@ -185,7 +191,7 @@ func (s *strategy) BuildPostActions(projectPath string) error {
 	buildCommand.Dir = projectPath
 	commands = append(commands, buildCommand)
 
-	testCommand := exec.Command("go", "test", ".")
+	testCommand := exec.Command("go", "test", "./...")
 	testCommand.Dir = projectPath
 	commands = append(commands, testCommand)
 
@@ -203,78 +209,27 @@ func (s *strategy) BuildPostActions(projectPath string) error {
 }
 
 func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
-	funcMap := template.FuncMap{
-		"capitalize":       templates.Capitalize,
-		"camelize":         templates.Camelize,
-		"slice":            templates.Slice,
-		"split":            strings.Split,
-		"pluralize":        templates.Pluralize,
-		"replaceAll":       strings.ReplaceAll,
-		"buildValidations": buildValidations,
-		"empty":            templates.Empty,
-		"join":             strings.Join,
-		"mapSort":          mapSort,
-	}
+	funcMap := templates.DefaultFuncMap()
+	funcMap["buildValidations"] = buildValidations
+	funcMap["mapSort"] = mapSort
+	funcMap["jsonMarshal"] = jsonMarshal
 
 	for key, file := range fileMap {
-		sb := strings.Builder{}
-		path := fmt.Sprintf("internal/templates/%s", file.TemplatePath)
-		templateContent, err := os.ReadFile(path)
+		result, err := templates.Render(&templates.Template{
+			Path:    file.TemplatePath,
+			Name:    key,
+			Data:    file.Data,
+			FuncMap: funcMap,
+		})
 
 		if err != nil {
-			return fmt.Errorf("reading template file %s: %v", key, err)
+			return err
 		}
 
-		parsedTemplate, err := template.New(key).Funcs(funcMap).Parse(string(templateContent))
-
-		if err != nil {
-			return fmt.Errorf("parsing template file %s: %v", key, err)
-		}
-
-		err = parsedTemplate.Execute(&sb, file.Data)
-
-		if err != nil {
-			return fmt.Errorf("rendering template %s: %v", key, err)
-		}
-
-		result := sb.String()
 		file.Result = templates.SimpleFormat(result)
 	}
 
 	return nil
-}
-
-func buildValidations(field entities.Field) string {
-	validations := make([]string, 0)
-
-	for _, validation := range field.Validations {
-		switch validation.Name {
-		case "required":
-			validations = append(validations, "required")
-		case "type":
-			validations = append(validations, validation.Value)
-		default:
-			validations = append(validations, fmt.Sprintf("%s=%s", validation.Name, validation.Value))
-		}
-	}
-
-	result := strings.Join(validations, ",")
-
-	if result == "" {
-		return ""
-	} else {
-		return fmt.Sprintf("validate:\"%s\"", result)
-	}
-}
-
-func mapSort(sort string) int {
-	switch sort {
-	case "asc":
-		return 1
-	case "desc":
-		return -1
-	}
-	return 1
 }
 
 func NewStrategy(definitions *entities.Definitions) entities.Strategy {

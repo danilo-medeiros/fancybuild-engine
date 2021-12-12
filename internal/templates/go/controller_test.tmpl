@@ -1,0 +1,64 @@
+package {{.Entity.Name}}_test
+
+import (
+{{if .Entity.HasAction "create"}}
+	"encoding/json"
+	"{{.App.Repository}}/test/utils"
+	"github.com/stretchr/testify/assert"
+{{end}}
+	"os"
+	"testing"
+	"github.com/joho/godotenv"
+)
+
+func TestMain(m *testing.M) {
+	err := godotenv.Load("../../.env.test")
+
+	if err != nil {
+		panic(err)
+	}
+
+	os.Exit(m.Run())
+}
+
+{{range .Entity.Actions}}
+{{if .IsCreate}}
+
+func TestCreate{{capitalize $.Entity.Name}}(t *testing.T) {
+	route := "{{.Endpoint}}"
+	method := "{{.HTTPMethod}}"
+	app, teardown := utils.SetupTests()
+	defer teardown()
+
+	valid{{capitalize .Entity.Name}}, err := {{jsonMarshal $.Entity}}
+
+	assert.Equalf(t, nil, err, "parsing body")
+
+	tests := []*utils.TestCase{
+{{if .Authenticated}}
+		{
+			Description:   "unauthorized user",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+			Authenticated: false,
+			RequestBody:   valid{{capitalize $.Entity.Name}},
+		},
+{{end}}
+        {
+			Description:   "created successfully",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  200,
+			Method:        method,
+			Authenticated: true,
+			RequestBody:   valid{{capitalize $.Entity.Name}},
+		},
+	}
+
+	utils.RunTestCases(app, t, tests)
+}
+
+{{end}}
+{{end}}
