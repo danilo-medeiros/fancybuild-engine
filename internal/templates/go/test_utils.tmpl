@@ -11,10 +11,11 @@ import (
 	"os"
 	"testing"
 
-	"{{.App.Repository}}/internal/app"
-	"{{.App.Repository}}/internal/database"
+	"{{.App.Repository}}/pkg/app"
+	"{{.App.Repository}}/pkg/database"
 	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 type TestCase struct {
@@ -143,21 +144,34 @@ func RunTestCases(app *fiber.App, t *testing.T, tests []*TestCase) {
 	}
 }
 
-func SetupTests() (*fiber.App, TeardownTests) {
-	db := database.New(os.Getenv("DB_URL"), os.Getenv("DB_NAME"))
-	client := db.Connect()
+func dropDatabase(client *mongo.Client) {
 	err := client.Database(os.Getenv("DB_NAME")).Drop(context.Background())
 
 	if err != nil {
 		panic(err)
 	}
+}
 
-	defer func() {
-		db.Disconnect()
-	}()
+func SetupData(testName string) TeardownTests {
+	PanicIfError(os.Setenv("DB_NAME", fmt.Sprintf("%s_%s", os.Getenv("DB_NAME"), testName)))
+	db := database.New(os.Getenv("DB_URL"), os.Getenv("DB_NAME"))
+	client := db.Connect()
+	dropDatabase(client)
 	app, terminate := app.Setup()
 {{if .HasAuthentication}}
 	CreateUser(app)
+{{end}}
+
+	return func() {
+		terminate()
+		dropDatabase(client)
+		db.Disconnect()
+	}
+}
+
+func SetupTests() (*fiber.App, TeardownTests) {
+	app, terminate := app.Setup()
+{{if .HasAuthentication}}
 	GetValidToken(app)
 {{end}}
 

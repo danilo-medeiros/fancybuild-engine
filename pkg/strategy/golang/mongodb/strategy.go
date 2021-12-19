@@ -22,31 +22,31 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 			TemplatePath: "go/main.tmpl",
 		},
 		"app": {
-			FinalPath:    "internal/app/app.go",
+			FinalPath:    "pkg/app/app.go",
 			TemplatePath: "go/app.tmpl",
 		},
 		"validator": {
-			FinalPath:    "internal/validator/validator.go",
+			FinalPath:    "pkg/validator/validator.go",
 			TemplatePath: "go/validator.tmpl",
 		},
 		"router": {
-			FinalPath:    "internal/router/router.go",
+			FinalPath:    "pkg/router/router.go",
 			TemplatePath: "go/mongodb/router.tmpl",
 		},
 		"entities": {
-			FinalPath:    "internal/entities/entities.go",
+			FinalPath:    "pkg/entities/entities.go",
 			TemplatePath: "go/mongodb/entities.tmpl",
 		},
 		"health": {
-			FinalPath:    "internal/health/controller.go",
+			FinalPath:    "pkg/health/controller.go",
 			TemplatePath: "go/mongodb/health.tmpl",
 		},
 		"database": {
-			FinalPath:    "internal/database/database.go",
+			FinalPath:    "pkg/database/database.go",
 			TemplatePath: "go/mongodb/database.tmpl",
 		},
 		"error_handler": {
-			FinalPath:    "internal/errors/handler.go",
+			FinalPath:    "pkg/errors/handler.go",
 			TemplatePath: "go/error_handler.tmpl",
 		},
 		"gitignore": {
@@ -85,15 +85,15 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 
 	if s.Definitions.HasAuthentication() {
 		fileMap["auth_controller"] = &entities.File{
-			FinalPath:    "internal/auth/controller.go",
+			FinalPath:    "pkg/auth/controller.go",
 			TemplatePath: "go/auth_controller.tmpl",
 		}
 		fileMap["auth_handler"] = &entities.File{
-			FinalPath:    "internal/auth/handler.go",
+			FinalPath:    "pkg/auth/handler.go",
 			TemplatePath: "go/auth_handler.tmpl",
 		}
 		fileMap["auth_service"] = &entities.File{
-			FinalPath:    "internal/auth/service.go",
+			FinalPath:    "pkg/auth/service.go",
 			TemplatePath: "go/auth_service.tmpl",
 		}
 		fileMap["auth_test"] = &entities.File{
@@ -117,7 +117,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 
 		if entity.HasController() {
 			fileMap[fmt.Sprintf("%s_controller", entity.Name)] = &entities.File{
-				FinalPath:    fmt.Sprintf("internal/%s/controller.go", entity.Name),
+				FinalPath:    fmt.Sprintf("pkg/%s/controller.go", entity.Name),
 				TemplatePath: "go/controller.tmpl",
 				Data:         data,
 			}
@@ -134,7 +134,7 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 
 		if entity.HasService() {
 			fileMap[fmt.Sprintf("%s_service", entity.Name)] = &entities.File{
-				FinalPath:    fmt.Sprintf("internal/%s/service.go", entity.Name),
+				FinalPath:    fmt.Sprintf("pkg/%s/service.go", entity.Name),
 				TemplatePath: "go/service.tmpl",
 				Data:         data,
 			}
@@ -142,14 +142,14 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 
 		if entity.HasRepository() {
 			fileMap[fmt.Sprintf("%s_repository", entity.Name)] = &entities.File{
-				FinalPath:    fmt.Sprintf("internal/%s/repository.go", entity.Name),
+				FinalPath:    fmt.Sprintf("pkg/%s/repository.go", entity.Name),
 				TemplatePath: "go/mongodb/repository.tmpl",
 				Data:         data,
 			}
 		}
 
 		fileMap[fmt.Sprintf("%s_entity", entity.Name)] = &entities.File{
-			FinalPath:    fmt.Sprintf("internal/entities/%s.go", entity.Name),
+			FinalPath:    fmt.Sprintf("pkg/entities/%s.go", entity.Name),
 			TemplatePath: "go/mongodb/entity.tmpl",
 			Data:         data,
 		}

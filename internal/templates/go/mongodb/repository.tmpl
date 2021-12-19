@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"{{.Definitions.App.Repository}}/internal/entities"
+	"{{.Definitions.App.Repository}}/pkg/entities"
 {{if or (.Entity.HasAction "create") (.Entity.HasAction "update") }}
 	"github.com/gofiber/fiber/v2"
 {{end}}

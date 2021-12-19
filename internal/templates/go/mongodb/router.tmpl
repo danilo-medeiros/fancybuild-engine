@@ -2,14 +2,14 @@ package router
 
 import (
 {{if .HasAuthentication}}
-	"{{.App.Repository}}/internal/auth"
+	"{{.App.Repository}}/pkg/auth"
 	"github.com/go-redis/redis/v8"
 	"os"
 {{end}}
-	"{{.App.Repository}}/internal/health"
+	"{{.App.Repository}}/pkg/health"
 {{range .App.Entities}}
 {{if .HasController}}
-	"{{$.App.Repository}}/internal/{{.Name}}"
+	"{{$.App.Repository}}/pkg/{{.Name}}"
 {{end}}
 {{end}}
     "github.com/gofiber/fiber/v2"

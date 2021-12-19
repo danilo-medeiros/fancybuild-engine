@@ -5,7 +5,7 @@ import (
 	"time"
 	"github.com/google/uuid"
 {{end}}
-	"{{.Definitions.App.Repository}}/internal/entities"
+	"{{.Definitions.App.Repository}}/pkg/entities"
 {{if (eq $.Entity.Name $.Definitions.App.Authentication.Entity)}}
 	"golang.org/x/crypto/bcrypt"
 	"fmt"

@@ -15,6 +15,18 @@ type Field struct {
 	Hashed      bool          `json:"hashed"`
 }
 
+func randomString(chars string, size int) string {
+	result := ""
+
+	for {
+		if len(result) == size {
+			return result
+		}
+
+		result += string(chars[rand.Intn(len(chars))])
+	}
+}
+
 // Generates an example value for this field.
 // The value is generated within the validation constratins
 func (f Field) Example() string {
@@ -83,7 +95,7 @@ func (f Field) Example() string {
 		}
 
 		if validation.Name == "email" {
-			return "example.email@example.com"
+			return fmt.Sprintf("example.%s@example.com", randomString("abcdefghijklmnopqrstuvwxyz1234567890", 5))
 		}
 
 		if validation.Name == "required" {
@@ -105,14 +117,7 @@ func (f Field) Example() string {
 	}
 
 	size := rand.Intn(max-min) + min
-
-	for {
-		if len(result) == size {
-			break
-		}
-
-		result += string("abcdefghijklmnopqrstuvwxyz"[rand.Intn(26)])
-	}
+	result = randomString("abcdefghijklmnopqrstuvwxyz", size)
 
 	return result
 }
