@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+
+	"github.com/go-playground/validator/v10"
 )
 
 type fieldExampleTestCase interface {
@@ -43,6 +45,7 @@ func newFieldExampleTestCase(f *Field) fieldExampleTestCase {
 
 func (s *stringTestCase) IsValid(value string) bool {
 	valid := true
+	validate := validator.New()
 
 	for _, validation := range s.field.Validations {
 		switch validation.Name {
@@ -68,11 +71,16 @@ func (s *stringTestCase) IsValid(value string) bool {
 		case "required":
 			valid = valid && value != ""
 		case "email":
-			valid = valid && value == "example.email@example.com"
+			err := validate.Var(value, "email")
+			valid = valid && err == nil
 		case "oneof":
 			valid = valid && strings.Split(validation.Value, " ")[0] == value
 		default:
 			valid = false
+		}
+
+		if !valid {
+			return false
 		}
 	}
 

@@ -40,7 +40,7 @@ func (f Field) Example() string {
 		isNumber = false
 	}
 
-	max := 20
+	max := 999
 	min := 0
 	required := false
 
@@ -103,21 +103,26 @@ func (f Field) Example() string {
 		}
 	}
 
-	if max <= min {
-		max += min
-	}
+	fixed := max == min
 
 	if required && min == 0 {
 		min = 1
 	}
 
 	if isNumber {
-		value := rand.Intn(max-min) + min
+		value := max
+		if !fixed {
+			value = rand.Intn(max-min) + min
+		}
 		return fmt.Sprintf("%v", value)
 	}
 
-	size := rand.Intn(max-min) + min
-	result = randomString("abcdefghijklmnopqrstuvwxyz", size)
+	size := max
 
+	if !fixed {
+		size = rand.Intn(max-min) + min
+	}
+
+	result = randomString("abcdefghijklmnopqrstuvwxyz", size)
 	return result
 }
