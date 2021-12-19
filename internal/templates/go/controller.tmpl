@@ -38,7 +38,10 @@ func (c *controller) Create(ctx *fiber.Ctx) error {
 	err := ctx.BodyParser(&{{$.Entity.Name}})
 
 	if err != nil {
-		return err
+		return &fiber.Error{
+			Code:    fiber.StatusNotAcceptable,
+			Message: err.Error(),
+		}
 	}
 {{if and $.Entity.BelongsToAuthenticatedEntity .Authenticated}}
 	{{$.Entity.Name}}.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)

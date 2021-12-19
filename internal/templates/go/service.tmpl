@@ -31,7 +31,7 @@ type GetAllParams struct {
 {{end}}
 {{end}}
 {{range $.Entity.Fields}}
-	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty" validate:"{{buildValidations .}}"`
+	{{capitalize .Name}} {{.Type}} `query:"{{.Name}}" bson:"{{.Name}},omitempty" {{buildValidations .}}`
 {{end}}
 }
 {{end}}

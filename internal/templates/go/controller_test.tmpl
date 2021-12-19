@@ -34,8 +34,8 @@ func TestCreate{{capitalize $.Entity.Name}}(t *testing.T) {
 	defer teardown()
 
 	valid{{capitalize .Entity.Name}}, err := {{jsonMarshal $.Entity}}
-
 	assert.Equalf(t, nil, err, "parsing body")
+	invalidBody := []byte("")
 
 	tests := []*utils.TestCase{
 {{if .Authenticated}}
@@ -49,13 +49,22 @@ func TestCreate{{capitalize $.Entity.Name}}(t *testing.T) {
 			RequestBody:   valid{{capitalize $.Entity.Name}},
 		},
 {{end}}
+		{
+			Description:   "invalid body",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  406,
+			Method:        method,
+			Authenticated: {{.Authenticated}},
+			RequestBody:   invalidBody,
+		},
         {
 			Description:   "created successfully",
 			Route:         route,
 			ExpectedError: false,
 			ExpectedCode:  200,
 			Method:        method,
-			Authenticated: true,
+			Authenticated: {{.Authenticated}},
 			RequestBody:   valid{{capitalize $.Entity.Name}},
 		},
 	}

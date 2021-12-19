@@ -28,7 +28,7 @@ func randomString(chars string, size int) string {
 }
 
 // Generates an example value for this field.
-// The value is generated within the validation constratins
+// The value is generated within the validation constraints
 func (f Field) Example() string {
 	isNumber := false
 	var result string
