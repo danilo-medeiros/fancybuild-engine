@@ -4,7 +4,7 @@ package entities
 type {{capitalize .Entity.Name}} struct {
 	ID    string  `json:"id" bson:"id"`
 {{range .Entity.Fields}}
-	{{capitalize .Name}} {{.Type}} `json:"{{.Name}}" bson:"{{.Name}}" {{buildValidations .}}`
+	{{capitalize .Name}} {{.Type}} `json:"{{.Name}}" bson:"{{.Name}}" {{buildValidations . true}}`
 {{end}}
 {{range .Entity.HasMany}}
 {{if .IsNestedIn $.Entity}}

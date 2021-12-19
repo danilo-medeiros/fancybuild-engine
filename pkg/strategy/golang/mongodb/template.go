@@ -30,10 +30,13 @@ func jsonMarshalField(field *entities.Field) string {
 	return ""
 }
 
-func buildValidations(field *entities.Field) string {
+func buildValidations(field *entities.Field, includeRequired bool) string {
 	validations := make([]string, 0)
 
 	for _, validation := range field.Validations {
+		if validation.Name == "required" && !includeRequired {
+			continue
+		}
 		switch validation.Name {
 		case "required", "email":
 			validations = append(validations, validation.Name)
