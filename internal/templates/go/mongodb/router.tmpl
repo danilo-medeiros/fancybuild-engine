@@ -1,0 +1,121 @@
+package router
+
+import (
+{{if .HasAuthentication}}
+	"{{.App.Repository}}/pkg/auth"
+	"github.com/go-redis/redis/v8"
+	"os"
+{{end}}
+	"{{.App.Repository}}/pkg/health"
+{{range .App.Entities}}
+{{if .HasController}}
+	"{{$.App.Repository}}/pkg/{{.Name}}"
+{{end}}
+{{end}}
+    "github.com/gofiber/fiber/v2"
+	"go.mongodb.org/mongo-driver/mongo"
+)
+
+func Router(app *fiber.App, client *mongo.Client) {
+	hc := health.NewController()
+
+{{range .App.Entities}}
+{{if .HasController}}
+{{if (eq .Name $.App.Authentication.Entity)}}
+	{{.Name}}Service := {{.Name}}.NewService(
+		{{.Name}}.NewRepository(
+			client,
+		),
+	)
+{{end}}
+
+{{$controller := camelize .Name "controller"}}
+    {{$controller}} := {{.Name}}.NewController(
+{{if (eq .Name $.App.Authentication.Entity)}}
+		{{.Name}}Service,
+{{else}}
+		{{.Name}}.NewService(
+			{{.Name}}.NewRepository(
+				client,
+			),
+		),
+{{end}}
+	)
+{{end}}
+{{end}}
+
+{{if .HasAuthentication}}
+	redisClient := redis.NewClient(&redis.Options{
+		Addr:     os.Getenv("REDIS_URL"),
+		Password: os.Getenv("REDIS_PASSWORD"),
+		DB:       0,
+	})
+
+	authService := auth.NewService(redisClient)
+	authHandler := auth.NewHandler(authService)
+{{end}}
+
+	app.Get("/health", hc.Get)
+	v1 := app.Group("/v1")
+{{range .App.Entities}}
+{{if .HasController}}
+{{$group := camelize .Name "grp"}}{{$controller := camelize .Name "controller"}}
+    {{$group}} := v1.Group("/{{pluralize .Name}}")
+{{$isAuthenticatedEntity := .IsAuthenticated}}
+{{if $isAuthenticatedEntity}}
+	{{$group}}.Use(authHandler)
+{{end}}
+{{range .Actions}}
+{{if eq .Type "create"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Post("/", authHandler, {{$controller}}.Create)
+{{else}}
+    {{$group}}.Post("/", {{$controller}}.Create)
+{{end}}
+{{end}}
+{{if eq .Type "getOne"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Get("/:id", authHandler, {{$controller}}.GetOne)
+{{else}}
+    {{$group}}.Get("/:id", {{$controller}}.GetOne)
+{{end}}
+{{end}}
+{{if eq .Type "getAll"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Get("/", authHandler, {{$controller}}.GetAll)
+{{else}}
+    {{$group}}.Get("/", {{$controller}}.GetAll)
+{{end}}
+{{end}}
+{{if eq .Type "update"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Put("/:id", authHandler, {{$controller}}.Update)
+    {{$group}}.Patch("/:id", authHandler, {{$controller}}.Update)
+{{else}}
+	{{$group}}.Put("/:id", {{$controller}}.Update)
+    {{$group}}.Patch("/:id", {{$controller}}.Update)
+{{end}}
+{{end}}
+{{if eq .Type "delete"}}
+{{if (and .Authenticated (not $isAuthenticatedEntity))}}
+	{{$group}}.Delete("/:id", authHandler, {{$controller}}.Delete)
+{{else}}
+    {{$group}}.Delete("/:id", {{$controller}}.Delete)
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+{{end}}
+
+{{if .HasAuthentication}}
+	authController := auth.NewController(
+		{{.App.Authentication.Entity}}Service,
+		authService,
+	)
+
+	authGrp := v1.Group("/auth")
+	authGrp.Post("/signin", authController.SignIn)
+	authGrp.Post("/signout", authHandler, authController.SignOut)
+	authGrp.Get("/me", authHandler, authController.Me)
+{{end}}
+}

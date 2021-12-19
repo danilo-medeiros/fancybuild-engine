@@ -1,0 +1,33 @@
+package app
+
+import (
+	"os"
+
+	"{{.App.Repository}}/pkg/database"
+	"{{.App.Repository}}/pkg/errors"
+	"{{.App.Repository}}/pkg/router"
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gofiber/fiber/v2/middleware/recover"
+)
+
+type Terminate func()
+
+func Setup() (*fiber.App, Terminate) {
+	db := database.New(os.Getenv("DB_URL"), os.Getenv("DB_NAME"))
+	client := db.Connect()
+
+	app := fiber.New(fiber.Config{
+		ErrorHandler:          errors.Handler,
+		DisableStartupMessage: true,
+		AppName:               "{{.App.Name}}",
+	})
+
+	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
+	app.Use(logger.New())
+	router.Router(app, client)
+
+	return app, func() {
+		db.Disconnect()
+	}
+}

@@ -1,0 +1,48 @@
+package main_test
+
+import (
+	"os"
+	"testing"
+
+	"{{.App.Repository}}/test/utils"
+	"github.com/joho/godotenv"
+)
+
+func TestMain(m *testing.M) {
+	err := godotenv.Load("../.env.test")
+
+	if err != nil {
+		panic(err)
+	}
+
+	teardown := utils.SetupData("main_test")
+	code := m.Run()
+	teardown()
+	os.Exit(code)
+}
+
+func TestHealthRoute(t *testing.T) {
+	app, teardown := utils.SetupTests()
+	defer teardown()
+
+	tests := []*utils.TestCase{
+		{
+			Description:   "health",
+			Route:         "/health",
+			ExpectedError: false,
+			ExpectedCode:  200,
+			Method:        "GET",
+		},
+
+		{
+			Description:   "non existing route",
+			Route:         "/i-dont-exist",
+			ExpectedError: false,
+			ExpectedCode:  404,
+			ExpectedBody:  "Cannot GET /i-dont-exist",
+			Method:        "GET",
+		},
+	}
+
+	utils.RunTestCases(app, t, tests)
+}

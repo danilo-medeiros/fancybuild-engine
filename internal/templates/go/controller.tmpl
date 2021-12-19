@@ -1,0 +1,245 @@
+package {{$.Entity.Name}}
+
+import (
+	"{{.Definitions.App.Repository}}/pkg/entities"
+	"{{.Definitions.App.Repository}}/pkg/validator"
+	"github.com/gofiber/fiber/v2"
+)
+
+type Controller interface {
+{{range .Entity.Actions}}
+{{if eq .Type "create"}}
+    Create(*fiber.Ctx) error
+{{end}}
+{{if eq .Type "getOne"}}
+    GetOne(*fiber.Ctx) error
+{{end}}
+{{if eq .Type "getAll"}}
+    GetAll(*fiber.Ctx) error
+{{end}}
+{{if eq .Type "update"}}
+    Update(*fiber.Ctx) error
+{{end}}
+{{if eq .Type "delete"}}
+    Delete(*fiber.Ctx) error
+{{end}}
+{{end}}
+}
+
+type controller struct {
+	service Service
+}
+
+{{range .Entity.Actions}}
+{{if eq .Type "create"}}
+// Create - Create one {{$.Entity.Name}}
+func (c *controller) Create(ctx *fiber.Ctx) error {
+	{{$.Entity.Name}} := entities.New{{capitalize $.Entity.Name}}()
+	err := ctx.BodyParser(&{{$.Entity.Name}})
+
+	if err != nil {
+		return &fiber.Error{
+			Code:    fiber.StatusNotAcceptable,
+			Message: err.Error(),
+		}
+	}
+{{if and $.Entity.BelongsToAuthenticatedEntity .Authenticated}}
+	{{$.Entity.Name}}.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)
+{{end}}
+	err = validator.Validate(&{{$.Entity.Name}})
+
+	if err != nil {
+		return err
+	}
+
+	result, err := c.service.Create(&{{$.Entity.Name}})
+
+	if err != nil {
+		return err
+	}
+
+{{if (not (empty .Output.Entity))}}
+{{$outputEntity := $.Definitions.FindEntity .Output.Entity}}
+	{{$outputEntity.Name}} := &entities.{{capitalize $outputEntity.Name}}{
+{{range $outputEntity.Fields}}
+		{{capitalize .Name}}: result.{{capitalize .Name}},
+{{end}}
+{{if (and $.Entity.Timestamps $outputEntity.Timestamps)}}
+		Timestamps: result.Timestamps,
+{{end}}
+	}
+
+	return ctx.JSON(&entities.SingleResult{
+		Data: {{$outputEntity.Name}},
+	})
+{{else}}
+	return ctx.JSON(&entities.SingleResult{
+		Data: result,
+	})
+{{end}}
+}
+{{end}}
+{{if eq .Type "getOne"}}
+// GetOne - Get one {{$.Entity.Name}} by parameters
+func (c *controller) GetOne(ctx *fiber.Ctx) error {
+	params := GetOneParams{
+		ID: ctx.Params("id"),
+{{if and $.Entity.BelongsToAuthenticatedEntity .Authenticated}}
+		{{capitalize $.Definitions.App.Authentication.Entity}}ID: ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string),
+{{end}}
+	}
+
+	err := validator.Validate(&params)
+
+	if err != nil {
+		return err
+	}
+
+	result, err := c.service.GetOne(&params)
+
+	if err != nil {
+		return err
+	}
+
+	if result == nil {
+		return fiber.ErrNotFound
+	}
+
+{{if (not (empty .Output.Entity))}}
+{{$outputEntity := $.Definitions.FindEntity .Output.Entity}}
+	{{$outputEntity.Name}} := &entities.{{capitalize $outputEntity.Name}}{
+{{range $outputEntity.Fields}}
+		{{capitalize .Name}}: result.{{capitalize .Name}},
+{{end}}
+{{if (and $.Entity.Timestamps $outputEntity.Timestamps)}}
+		Timestamps: result.Timestamps,
+{{end}}
+	}
+
+	return ctx.JSON(&entities.SingleResult{
+		Data: {{$outputEntity.Name}},
+	})
+{{else}}
+	return ctx.JSON(&entities.SingleResult{
+		Data: result,
+	})
+{{end}}
+}
+{{end}}
+{{if eq .Type "getAll"}}
+// GetAll - Gets all the {{pluralize $.Entity.Name}} given a set of parameters
+func (c *controller) GetAll(ctx *fiber.Ctx) error {
+	var params GetAllParams
+	err := ctx.QueryParser(&params)
+
+	if err != nil {
+		return err
+	}
+
+{{if and $.Entity.BelongsToAuthenticatedEntity .Authenticated}}
+	params.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)
+{{end}}
+
+	err = validator.Validate(&params)
+
+	if err != nil {
+		return err
+	}
+
+	result, err := c.service.GetAll(&params)
+
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(&result)
+}
+{{end}}
+{{if eq .Type "update"}}
+// Update - Update one {{$.Entity.Name}}
+func (c *controller) Update(ctx *fiber.Ctx) error {
+	{{$.Entity.Name}} := entities.New{{capitalize $.Entity.Name}}()
+	err := ctx.BodyParser(&{{$.Entity.Name}})
+
+	if err != nil {
+		return err
+	}
+
+{{if and $.Entity.BelongsToAuthenticatedEntity .Authenticated}}
+	{{$.Entity.Name}}.{{capitalize $.Definitions.App.Authentication.Entity}}ID = ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string)
+{{end}}
+
+	err = validator.Validate(&{{$.Entity.Name}})
+
+	if err != nil {
+		return err
+	}
+
+	result, err := c.service.Update(&{{$.Entity.Name}})
+
+	if err != nil {
+		return err
+	}
+
+{{if (not (empty .Output.Entity))}}
+{{$outputEntity := $.Definitions.FindEntity .Output.Entity}}
+	{{$outputEntity.Name}} := &entities.{{capitalize $outputEntity.Name}}{
+{{range $outputEntity.Fields}}
+		{{capitalize .Name}}: result.{{capitalize .Name}},
+{{end}}
+{{if (and $.Entity.Timestamps $outputEntity.Timestamps)}}
+		Timestamps: result.Timestamps,
+{{end}}
+	}
+
+	return ctx.JSON(&entities.SingleResult{
+		Data: {{$outputEntity.Name}},
+	})
+{{else}}
+	return ctx.JSON(&entities.SingleResult{
+		Data: result,
+	})
+{{end}}
+}
+{{end}}
+{{if eq .Type "delete"}}
+// Delete - Hard delete one {{$.Entity.Name}}
+func (c *controller) Delete(ctx *fiber.Ctx) error {
+	params := GetOneParams{
+		ID: ctx.Params("id"),
+{{if and $.Entity.BelongsToAuthenticatedEntity .Authenticated}}
+		{{capitalize $.Definitions.App.Authentication.Entity}}ID: ctx.Locals("{{$.Definitions.App.Authentication.Entity}}Id").(string),
+{{end}}
+	}
+
+	{{$.Entity.Name}}, err := c.service.GetOne(&params)
+
+	if err != nil {
+		return err
+	}
+
+	if {{$.Entity.Name}} == nil {
+		return fiber.ErrNotFound
+	}
+
+	result, err := c.service.Delete({{$.Entity.Name}})
+
+	if err != nil {
+		return err
+	}
+
+	if result {
+		return ctx.JSON(&entities.SingleResult{Message: "{{capitalize $.Entity.Name}} deleted successfully"})
+	}
+
+	return &fiber.Error{
+		Code:    fiber.StatusNotModified,
+		Message: "{{capitalize $.Entity.Name}} not deleted",
+	}
+}
+{{end}}
+{{end}}
+
+func NewController(s Service) Controller {
+	return &controller{s}
+}

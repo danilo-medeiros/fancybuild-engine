@@ -1,0 +1,28 @@
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+
+	"{{.App.Repository}}/pkg/app"
+
+	"github.com/joho/godotenv"
+)
+
+func main() {
+	err := godotenv.Load()
+
+	if err != nil {
+		panic(err)
+	}
+
+	app, terminate := app.Setup()
+	defer terminate()
+	log.Printf("listening on port %s\n", os.Getenv("PORT"))
+	err = app.Listen(fmt.Sprintf("%s:%s", os.Getenv("HOST"), os.Getenv("PORT")))
+
+	if err != nil {
+		panic(err)
+	}
+}

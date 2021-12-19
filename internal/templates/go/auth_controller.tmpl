@@ -1,0 +1,99 @@
+package auth
+
+import (
+	"fmt"
+	"{{.App.Repository}}/pkg/{{.App.Authentication.Entity}}"
+	"{{.App.Repository}}/pkg/validator"
+	"github.com/gofiber/fiber/v2"
+)
+
+type SignInParams struct {
+	Email    string `json:"email" bson:"email,omitempty" validate:"email"`
+	Password string `json:"password" bson:"-" validate:"min=8,max=12"`
+}
+
+type Controller interface {
+	SignIn(*fiber.Ctx) error
+	SignOut(*fiber.Ctx) error
+	Me(*fiber.Ctx) error
+}
+
+type controller struct {
+	{{.App.Authentication.Entity}}Service {{.App.Authentication.Entity}}.Service
+	authService Service
+}
+
+func (c *controller) SignIn(ctx *fiber.Ctx) error {
+	var params SignInParams
+	err := ctx.BodyParser(&params)
+
+	if err != nil {
+		return err
+	}
+
+	err = validator.Validate(&params)
+
+	if err != nil {
+		return err
+	}
+
+	result, err := c.{{.App.Authentication.Entity}}Service.GetOne(&{{.App.Authentication.Entity}}.GetOneParams{
+		Email: params.Email,
+	})
+
+	if err != nil {
+		return err
+	}
+
+	if result == nil {
+		return fiber.ErrUnauthorized
+	}
+
+	validPassword := {{.App.Authentication.Entity}}.CheckPassword(params.Password, result.Password)
+
+	if !validPassword {
+		return fiber.ErrUnauthorized
+	}
+
+	token, err := c.authService.SignIn(result)
+
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(map[string]string{
+		"authToken": token,
+	})
+}
+
+func (c *controller) SignOut(ctx *fiber.Ctx) error {
+	err := c.authService.SignOut(ctx.Locals("token").(string))
+
+	if err != nil {
+		return fmt.Errorf("signing out %s", err.Error())
+	}
+
+	return ctx.SendStatus(fiber.StatusOK)
+}
+
+func (c *controller) Me(ctx *fiber.Ctx) error {
+	params := {{.App.Authentication.Entity}}.GetOneParams{
+		ID: ctx.Locals("{{.App.Authentication.Entity}}Id").(string),
+	}
+
+	{{.App.Authentication.Entity}}, err := c.{{.App.Authentication.Entity}}Service.GetOne(&params)
+
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return fiber.ErrNotFound
+	}
+
+	return ctx.JSON({{.App.Authentication.Entity}})
+}
+
+func NewController({{.App.Authentication.Entity}}Service {{.App.Authentication.Entity}}.Service, authService Service) Controller {
+	return &controller{userService: {{.App.Authentication.Entity}}Service, authService: authService}
+}

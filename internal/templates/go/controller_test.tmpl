@@ -1,0 +1,76 @@
+package {{.Entity.Name}}_test
+
+import (
+{{if .Entity.HasAction "create"}}
+	"encoding/json"
+	"{{.App.Repository}}/test/utils"
+	"github.com/stretchr/testify/assert"
+{{end}}
+	"os"
+	"testing"
+	"github.com/joho/godotenv"
+)
+
+func TestMain(m *testing.M) {
+	err := godotenv.Load("../../.env.test")
+
+	if err != nil {
+		panic(err)
+	}
+
+	teardown := utils.SetupData("{{.Entity.Name}}_test")
+	code := m.Run()
+	teardown()
+	os.Exit(code)
+}
+
+{{range .Entity.Actions}}
+{{if .IsCreate}}
+
+func TestCreate{{capitalize $.Entity.Name}}(t *testing.T) {
+	route := "{{.Endpoint}}"
+	method := "{{.HTTPMethod}}"
+	app, teardown := utils.SetupTests()
+	defer teardown()
+
+	valid{{capitalize .Entity.Name}}, err := {{jsonMarshal $.Entity}}
+	assert.Equalf(t, nil, err, "parsing body")
+	invalidBody := []byte("")
+
+	tests := []*utils.TestCase{
+{{if .Authenticated}}
+		{
+			Description:   "unauthorized user",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  401,
+			Method:        method,
+			Authenticated: false,
+			RequestBody:   valid{{capitalize $.Entity.Name}},
+		},
+{{end}}
+		{
+			Description:   "invalid body",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  406,
+			Method:        method,
+			Authenticated: {{.Authenticated}},
+			RequestBody:   invalidBody,
+		},
+        {
+			Description:   "created successfully",
+			Route:         route,
+			ExpectedError: false,
+			ExpectedCode:  200,
+			Method:        method,
+			Authenticated: {{.Authenticated}},
+			RequestBody:   valid{{capitalize $.Entity.Name}},
+		},
+	}
+
+	utils.RunTestCases(app, t, tests)
+}
+
+{{end}}
+{{end}}

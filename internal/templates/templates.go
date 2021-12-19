@@ -2,9 +2,58 @@ package templates
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"strings"
+	"text/template"
 )
+
+type Template struct {
+	Path    string
+	Name    string
+	Data    interface{}
+	FuncMap template.FuncMap
+}
+
+func Render(t *Template) (string, error) {
+	sb := strings.Builder{}
+	path := fmt.Sprintf("internal/templates/%s", t.Path)
+	content, err := os.ReadFile(path)
+
+	if err != nil {
+		return "", fmt.Errorf("reading template file %s: %v", t.Name, err)
+	}
+
+	parsedTemplate, err := template.
+		New(t.Name).
+		Funcs(t.FuncMap).
+		Parse(string(content))
+
+	if err != nil {
+		return "", fmt.Errorf("parsing template file %s: %v", t.Name, err)
+	}
+
+	err = parsedTemplate.Execute(&sb, t.Data)
+
+	if err != nil {
+		return "", fmt.Errorf("rendering template %s: %v", t.Name, err)
+	}
+
+	return sb.String(), nil
+}
+
+func DefaultFuncMap() template.FuncMap {
+	return template.FuncMap{
+		"capitalize": Capitalize,
+		"camelize":   Camelize,
+		"slice":      Slice,
+		"split":      strings.Split,
+		"pluralize":  Pluralize,
+		"replaceAll": strings.ReplaceAll,
+		"empty":      Empty,
+		"join":       strings.Join,
+	}
+}
 
 func Capitalize(text string) string {
 	splitted := strings.Split(text, "")
