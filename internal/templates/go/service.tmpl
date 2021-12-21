@@ -117,7 +117,7 @@ func (s *service) GetAll(params *GetAllParams) (*entities.PaginatedResult, error
 		Pagination: entities.Pagination{
 			SortBy:    params.SortBy,
 			Order:     params.Order,
-			PageIndex: params.PageIndex,
+			Page:      params.Page,
 			Count:     count,
 			Limit:     params.Limit,
 		},

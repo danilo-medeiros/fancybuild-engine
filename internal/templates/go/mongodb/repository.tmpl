@@ -9,13 +9,14 @@ import (
 {{if or (.Entity.HasAction "create") (.Entity.HasAction "update") }}
 	"github.com/gofiber/fiber/v2"
 {{end}}
-{{if or (.Entity.HasAction "delete") (.Entity.HasAction "update")}}
+{{if or (.Entity.HasAction "delete") (.Entity.HasAction "update") (.Entity.HasAction "getAll")}}
 	"go.mongodb.org/mongo-driver/bson"
 {{end}}
 	"go.mongodb.org/mongo-driver/mongo"
 
 {{range .Entity.Actions}}{{if eq .Type "getAll"}}
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 {{end}}{{end}}
 )
 
@@ -75,12 +76,23 @@ func (s *repository) Create({{$.Entity.Name}} *entities.{{capitalize $.Entity.Na
 func (s *repository) GetAll(params *GetAllParams) ([]*entities.{{capitalize $.Entity.Name}}, error) {
 	var result []*entities.{{capitalize $.Entity.Name}}
 
-	skip := params.PageIndex * params.Limit
+	skip := params.Page * params.Limit
+
+	sortOrder := 1
+
+	if params.Order == "desc" {
+		sortOrder = -1
+	}
 
 	cursor, err := s.client.
 		Database(s.database).
 		Collection(s.collection).
-		Find(context.TODO(), params, &options.FindOptions{Limit: &params.Limit, Skip: &skip})
+		Find(context.TODO(), params, &options.FindOptions{Limit: &params.Limit, Skip: &skip, Sort: bson.D{
+			primitive.E{
+				Key:   params.SortBy,
+				Value: sortOrder,
+			},
+		}})
 
 	if err != nil {
 		return nil, fmt.Errorf("error while fetching {{pluralize $.Entity.Name}}: %w", err)

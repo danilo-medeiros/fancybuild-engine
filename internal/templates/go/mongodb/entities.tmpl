@@ -4,11 +4,11 @@ import "time"
 
 // Pagination - A entity to hold simple pagination parameters
 type Pagination struct {
-	SortBy    string `query:"sortBy" json:"sortBy,omitempty"`
-	Order     string `query:"order" json:"order,omitempty"`
-	PageIndex int64  `query:"pageIndex" json:"pageIndex,omitempty"`
-	Limit     int64  `query:"limit" json:"limit,omitempty"`
-	Count     int64  `query:"-" json:"count,omitempty"`
+	SortBy    string `query:"sortBy" json:"sortBy"`
+	Order     string `query:"order" json:"order" validate::"omitempty,oneof=asc desc"`
+	Page      int64  `query:"page" json:"page"`
+	Limit     int64  `query:"limit" json:"limit" validate:"max=100"`
+	Count     int64  `query:"-" json:"count"`
 }
 
 type PaginatedResult struct {

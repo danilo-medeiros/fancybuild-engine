@@ -79,6 +79,7 @@ func (c *controller) Create(ctx *fiber.Ctx) error {
 {{end}}
 }
 {{end}}
+
 {{if eq .Type "getOne"}}
 // GetOne - Get one {{$.Entity.Name}} by parameters
 func (c *controller) GetOne(ctx *fiber.Ctx) error {
@@ -126,10 +127,15 @@ func (c *controller) GetOne(ctx *fiber.Ctx) error {
 {{end}}
 }
 {{end}}
+
 {{if eq .Type "getAll"}}
 // GetAll - Gets all the {{pluralize $.Entity.Name}} given a set of parameters
 func (c *controller) GetAll(ctx *fiber.Ctx) error {
-	var params GetAllParams
+	params := GetAllParams{}
+	params.Pagination.Limit = 10
+	params.Pagination.SortBy = "id"
+	params.Pagination.Order = "desc"
+
 	err := ctx.QueryParser(&params)
 
 	if err != nil {
@@ -155,6 +161,7 @@ func (c *controller) GetAll(ctx *fiber.Ctx) error {
 	return ctx.JSON(&result)
 }
 {{end}}
+
 {{if eq .Type "update"}}
 // Update - Update one {{$.Entity.Name}}
 func (c *controller) Update(ctx *fiber.Ctx) error {
@@ -202,6 +209,7 @@ func (c *controller) Update(ctx *fiber.Ctx) error {
 {{end}}
 }
 {{end}}
+
 {{if eq .Type "delete"}}
 // Delete - Hard delete one {{$.Entity.Name}}
 func (c *controller) Delete(ctx *fiber.Ctx) error {

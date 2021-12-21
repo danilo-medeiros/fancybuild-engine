@@ -33,6 +33,10 @@ func jsonMarshalField(field *entities.Field) string {
 func buildValidations(field *entities.Field, includeRequired bool) string {
 	validations := make([]string, 0)
 
+	if !includeRequired {
+		validations = append(validations, "omitempty")
+	}
+
 	for _, validation := range field.Validations {
 		if validation.Name == "required" && !includeRequired {
 			continue
