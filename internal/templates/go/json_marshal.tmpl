@@ -2,4 +2,15 @@ json.Marshal(map[string]interface{}{
 {{range .Fields}}
     "{{.Name}}": {{jsonMarshalField .}},
 {{end}}
+{{range .HasMany}}
+{{if .IsNestedIn $}}
+    "{{pluralize .Name}}": []map[string]interface{}{
+        {
+{{range .Fields}}
+        "{{.Name}}": {{jsonMarshalField .}},
+{{end}}
+        },
+    },
+{{end}}
+{{end}}
 })

@@ -2,6 +2,7 @@ package entities
 
 import (
 	"fmt"
+	"math"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -40,7 +41,7 @@ func (f Field) Example() string {
 		isNumber = false
 	}
 
-	max := 999
+	max := -1
 	min := 0
 	required := false
 
@@ -109,6 +110,10 @@ func (f Field) Example() string {
 		min = 1
 	}
 
+	if max == -1 {
+		max = 50
+	}
+
 	if isNumber {
 		value := max
 		if !fixed {
@@ -117,10 +122,11 @@ func (f Field) Example() string {
 		return fmt.Sprintf("%v", value)
 	}
 
-	size := max
+	size := min
 
 	if !fixed {
-		size = rand.Intn(max-min) + min
+		nRange := int(math.Ceil((float64(max-min) * 0.1)))
+		size = rand.Intn(nRange) + min
 	}
 
 	result = randomString("abcdefghijklmnopqrstuvwxyz", size)
