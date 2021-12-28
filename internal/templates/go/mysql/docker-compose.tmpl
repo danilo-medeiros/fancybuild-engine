@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  web:
+    depends_on:
+      - database
+    build: .
+    ports:
+      - "3000:3000"
+    networks:
+      - {{.App.Name}}_net
+  database:
+    image: mysql:8.0.27
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: mylocalpass
+      MYSQL_DATABASE: {{.App.Name}}
+    volumes:
+      - {{.App.Name}}_database:/data/db
+    ports:
+      - "3308:3306"
+    networks:
+      - {{.App.Name}}_net
+volumes:
+  {{.App.Name}}_database:
+networks:
+  {{.App.Name}}_net:
+    driver: bridge
+

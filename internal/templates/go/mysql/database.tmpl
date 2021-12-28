@@ -1,0 +1,60 @@
+package database
+
+import (
+	"fmt"
+
+	"{{.App.Repository}}/pkg/entities"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+type Database interface {
+	Connect() *gorm.DB
+	Disconnect()
+}
+
+type database struct {
+	Name   string
+	URL    string
+	Client *gorm.DB
+}
+
+func (d *database) Connect() *gorm.DB {
+	client, err := gorm.Open(mysql.Open(fmt.Sprintf("%s/%s?parseTime=true", d.URL, d.Name)), &gorm.Config{})
+
+	if err != nil {
+		panic(err)
+	}
+
+	err = client.AutoMigrate(
+{{range .App.Entities}}
+		&entities.{{capitalize .Name}}{},
+{{end}}
+	)
+
+	if err != nil {
+		panic(err)
+	}
+
+	d.Client = client
+	return client
+}
+
+func (d *database) Disconnect() {
+	db, err := d.Client.DB()
+
+	if err != nil {
+		panic(err)
+	}
+
+	if err = db.Close(); err != nil {
+		panic(err)
+	}
+}
+
+func New(url string, name string) Database {
+	return &database{
+		URL:  url,
+		Name: name,
+	}
+}

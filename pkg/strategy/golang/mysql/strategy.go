@@ -1,4 +1,4 @@
-package mongodb
+package mysql
 
 import (
 	"bytes"
@@ -32,19 +32,19 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		},
 		"router": {
 			FinalPath:    "pkg/router/router.go",
-			TemplatePath: "go/mongodb/router.tmpl",
+			TemplatePath: "go/mysql/router.tmpl",
 		},
 		"entities": {
 			FinalPath:    "pkg/entities/entities.go",
-			TemplatePath: "go/mongodb/entities.tmpl",
+			TemplatePath: "go/mysql/entities.tmpl",
 		},
 		"health": {
 			FinalPath:    "pkg/health/controller.go",
-			TemplatePath: "go/mongodb/health.tmpl",
+			TemplatePath: "go/mysql/health.tmpl",
 		},
 		"database": {
 			FinalPath:    "pkg/database/database.go",
-			TemplatePath: "go/mongodb/database.tmpl",
+			TemplatePath: "go/mysql/database.tmpl",
 		},
 		"error_handler": {
 			FinalPath:    "pkg/errors/handler.go",
@@ -56,11 +56,11 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		},
 		"env": {
 			FinalPath:    ".env",
-			TemplatePath: "go/mongodb/env.tmpl",
+			TemplatePath: "go/mysql/env.tmpl",
 		},
 		"env_test": {
 			FinalPath:    ".env.test",
-			TemplatePath: "go/mongodb/env_test.tmpl",
+			TemplatePath: "go/mysql/env_test.tmpl",
 		},
 		"readme": {
 			FinalPath:    "README.md",
@@ -76,11 +76,11 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		},
 		"dockerfile": {
 			FinalPath:    "Dockerfile",
-			TemplatePath: "go/mongodb/dockerfile.tmpl",
+			TemplatePath: "go/mysql/dockerfile.tmpl",
 		},
 		"docker-compose": {
 			FinalPath:    "docker-compose.yml",
-			TemplatePath: "go/mongodb/docker-compose.tmpl",
+			TemplatePath: "go/mysql/docker-compose.tmpl",
 		},
 	}
 
@@ -144,14 +144,14 @@ func (s *strategy) BuildFileMap() (map[string]*entities.File, error) {
 		if entity.HasRepository() {
 			fileMap[fmt.Sprintf("%s_repository", entity.Name)] = &entities.File{
 				FinalPath:    fmt.Sprintf("pkg/%s/repository.go", entity.Name),
-				TemplatePath: "go/mongodb/repository.tmpl",
+				TemplatePath: "go/mysql/repository.tmpl",
 				Data:         data,
 			}
 		}
 
 		fileMap[fmt.Sprintf("%s_entity", entity.Name)] = &entities.File{
 			FinalPath:    fmt.Sprintf("pkg/entities/%s.go", entity.Name),
-			TemplatePath: "go/mongodb/entity.tmpl",
+			TemplatePath: "go/mysql/entity.tmpl",
 			Data:         data,
 		}
 	}
@@ -212,8 +212,8 @@ func (s *strategy) BuildPostActions(projectPath string) error {
 func (s *strategy) renderFileMap(fileMap map[string]*entities.File) error {
 	funcMap := templates.DefaultFuncMap()
 	funcMap["buildValidations"] = utils.BuildValidations
-	funcMap["mapSort"] = mapSort
 	funcMap["jsonMarshal"] = utils.JsonMarshal
+	funcMap["buildIndexes"] = buildIndexes
 
 	for key, file := range fileMap {
 		result, err := templates.Render(&templates.Template{

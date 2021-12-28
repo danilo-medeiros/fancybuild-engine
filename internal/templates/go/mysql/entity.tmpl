@@ -1,0 +1,39 @@
+package entities
+
+// {{capitalize .Entity.Name}} - {{.Entity.Description}}
+type {{capitalize .Entity.Name}} struct {
+	ID     string `json:"id" gorm:"index:idx_{{.Entity.Name}}_id,unique,primary_key"`
+{{range .Entity.Fields}}
+	{{capitalize .Name}} {{.Type}} `json:"{{.Name}}" bson:"{{.Name}}" {{buildValidations . true}}`
+{{end}}
+{{range .Entity.HasMany}}
+{{if .IsNestedIn $.Entity}}
+	{{pluralize (capitalize .Name)}} []*{{capitalize .Name}} `json:"{{pluralize .Name}}" bson:"{{pluralize .Name}}" validate:"dive"`
+{{end}}
+{{end}}
+{{range .Entity.HasOne}}
+{{if .IsNestedIn $.Entity}}
+	{{capitalize .Name}} *{{capitalize .Name}} `json:"{{.Name}}" bson:"{{.Name}}" validate:"dive"`
+{{end}}
+{{end}}
+{{range .Entity.BelongsTo}}
+{{if .IsUsedForAuthentication}}
+	{{capitalize .Name}}ID string `json:"-" bson:"{{.Name}}Id"`
+{{else}}
+	{{capitalize .Name}}ID string `json:"{{.Name}}Id" bson:"{{.Name}}Id"`
+{{end}}
+{{end}}
+{{if .Entity.Timestamps}}
+	Timestamps `json:",inline" bson:",inline"`
+{{end}}
+}
+
+func New{{capitalize .Entity.Name}}() {{capitalize .Entity.Name}} {
+	return {{capitalize .Entity.Name}}{
+{{range .Entity.HasMany}}
+{{if .IsNestedIn $.Entity}}
+	{{pluralize (capitalize .Name)}}: make([]*{{capitalize .Name}}, 0), // Default value of empty array
+{{end}}
+{{end}}
+	}
+}
